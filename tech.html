@@ -57,8 +57,8 @@
     </div>
 
     <script>
-        // ⚠️ เดี๋ยวเราต้องไปสร้าง Webhook อันใหม่ใน Make แล้วเอาลิ้งค์มาใส่ตรงนี้
-        const WEBHOOK_URL = 'รอใส่_WEBHOOK_อันใหม่_ตรงนี้'; 
+        // ✅ ผมใส่ลิ้งค์ที่ถูกต้องให้ตรงนี้แล้วครับ (บรรทัดที่ 67)
+        const WEBHOOK_URL = 'https://hook.eu1.make.com/dsf3k4it2o2hsu033y0mh42wesia1gjy'; 
 
         document.getElementById('techForm').addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -67,7 +67,6 @@
             
             const formData = new FormData(this);
             try {
-                // เช็คว่าใส่ลิ้งค์หรือยัง
                 if(WEBHOOK_URL.includes('รอใส่')){
                    throw new Error('NoWebhook');
                 }
@@ -76,7 +75,7 @@
                 Swal.fire('สำเร็จ', 'แจ้งเตือนชาวบ้านเรียบร้อย!', 'success').then(() => window.location.reload());
             } catch (err) {
                 if(err.message === 'NoWebhook'){
-                    Swal.fire('https://hook.eu1.make.com/dsf3k4it2o2hsu033y0mh42wesia1gjy', 'warning');
+                    Swal.fire('ลืมใส่ลิ้งค์!', 'ต้องไปเอา Webhook จาก Make มาใส่ในโค้ดก่อนครับ', 'warning');
                 } else {
                     Swal.fire('ผิดพลาด', 'ส่งข้อมูลไม่สำเร็จ', 'error');
                 }
