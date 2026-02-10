@@ -3,82 +3,159 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบช่าง (ปิดงาน)</title>
+    <title>แจ้งซ่อมเทศบาล</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style> body { font-family: 'Kanit', sans-serif; } </style>
 </head>
-<body class="bg-gray-100 min-h-screen p-4">
-    <div class="max-w-md mx-auto bg-white rounded-lg shadow-lg p-6">
-        <h2 class="text-2xl font-bold text-center text-blue-600 mb-6">🛠️ บันทึกการปิดงาน</h2>
-        
-        <form id="techForm" class="space-y-4">
+<body class="bg-blue-50 min-h-screen">
+
+    <div class="container mx-auto px-4 py-8 max-w-md">
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <h2 class="text-2xl font-bold text-center text-blue-600 mb-6">📝 แจ้งซ่อมออนไลน์</h2>
             
-            <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                <label class="block text-gray-700 font-bold mb-2">🔢 เลขที่ใบงาน (Case ID)</label>
-                <input type="number" name="caseId" required 
-                       class="w-full px-4 py-2 border rounded-lg text-3xl text-center font-bold text-blue-600" 
-                       placeholder="เช่น 7">
-                <p class="text-xs text-gray-500 mt-1 text-center">*ดูเลขจากในไลน์กลุ่มแจ้งเตือน</p>
-            </div>
+            <form id="repairForm" class="space-y-4">
+                
+                <div class="bg-yellow-50 p-3 rounded-lg border border-yellow-200 shadow-sm">
+                    <label class="block text-gray-700 font-bold mb-2">📢 แจ้งเรื่องเกี่ยวกับอะไร? *</label>
+                    <select name="category" id="category" required 
+                            class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-lg">
+                        <option value="" disabled selected>-- กรุณาจิ้มเพื่อเลือกหัวข้อ --</option>
+                        <option value="ไฟฟ้าสาธารณะ">💡 ไฟฟ้าสาธารณะ (ไฟดับ/กิ่งไม้พาด)</option>
+                        <option value="ประปา/ท่อระบายน้ำ">🚰 ประปา / ท่อระบายน้ำ</option>
+                        <option value="ถนน/ทางเท้า">🛣️ ถนน / ทางเท้าชำรุด</option>
+                        <option value="ขยะ/ความสะอาด">🗑️ ขยะ / ความสะอาด</option>
+                        <option value="อื่นๆ">📝 อื่นๆ</option>
+                    </select>
+                </div>
 
-            <div>
-                <label class="block text-gray-700 font-bold mb-2">สถานะงาน</label>
-                <select name="status" class="w-full px-4 py-2 border rounded-lg">
-                    <option value="รับเรื่องแล้ว">🚧 รับเรื่อง (กำลังดำเนินการ)</option>
-                    <option value="เสร็จสิ้น">✅ ซ่อมเสร็จแล้ว (ปิดงาน)</option>
-                </select>
-            </div>
+                <div>
+                    <label class="block text-gray-700 font-bold mb-2">ชื่อผู้แจ้ง *</label>
+                    <input type="text" name="name" id="name" required 
+                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="ชื่อ-นามสกุล">
+                </div>
 
-            <div>
-                <label class="block text-gray-700 font-bold mb-2">ข้อความแจ้งชาวบ้าน</label>
-                <textarea name="message" rows="2" class="w-full px-4 py-2 border rounded-lg" placeholder="เช่น เปลี่ยนหลอดไฟให้แล้วครับ / กำลังเข้าไปดูหน้างาน"></textarea>
-            </div>
+                <div>
+                    <label class="block text-gray-700 font-bold mb-2">เบอร์โทรศัพท์ติดต่อ *</label>
+                    <input type="tel" name="phone" id="phone" required 
+                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="กรอกเบอร์โทรศัพท์">
+                </div>
 
-            <div>
-                <label class="block text-gray-700 font-bold mb-2">📸 รูปถ่ายหน้างาน/หลังซ่อม</label>
-                <input type="file" name="image" accept="image/*" class="w-full text-sm text-slate-500
-                    file:mr-4 file:py-2 file:px-4
-                    file:rounded-full file:border-0
-                    file:text-sm file:font-semibold
-                    file:bg-blue-50 file:text-blue-700
-                    hover:file:bg-blue-100">
-            </div>
+                <div>
+                    <label class="block text-gray-700 font-bold mb-2">รายละเอียดอาการ *</label>
+                    <textarea name="detail" id="detail" rows="3" required 
+                              class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="ระบุอาการ และ จุดสังเกต"></textarea>
+                </div>
 
-            <button type="submit" id="submitBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow-lg mt-4 transition">
-                🚀 ส่งข้อมูลอัปเดต
-            </button>
-        </form>
+                <div>
+                    <label class="block text-gray-700 font-bold mb-2">รูปถ่ายหน้างาน *</label>
+                    <div class="flex items-center justify-center w-full">
+                        <label class="flex flex-col w-full h-32 border-4 border-blue-200 border-dashed hover:bg-gray-100 hover:border-gray-300 rounded-lg cursor-pointer">
+                            <div class="flex flex-col items-center justify-center pt-7">
+                                <p class="pt-1 text-sm tracking-wider text-gray-400">กดเพื่อถ่ายรูป 📸</p>
+                            </div>
+                            <input type="file" name="image" id="imageInput" class="hidden" accept="image/*" capture="environment" onchange="previewImage(event)" required />
+                        </label>
+                    </div>
+                    <img id="preview" class="hidden w-full mt-4 rounded-lg shadow-md border border-gray-200" />
+                </div>
+
+                <div>
+                    <button type="button" onclick="getLocation()" 
+                            class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg flex justify-center items-center gap-2">
+                        📍 ระบุตำแหน่ง GPS
+                    </button>
+                    <p id="locationStatus" class="text-sm text-gray-500 mt-2 text-center"></p>
+                    <input type="hidden" name="lat" id="lat">
+                    <input type="hidden" name="long" id="long">
+                    <input type="hidden" name="userId" id="userId">
+                </div>
+
+                <button type="submit" id="submitBtn" 
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg mt-6 transform transition hover:scale-105">
+                    🚀 ส่งเรื่องแจ้งซ่อม
+                </button>
+            </form>
+        </div>
+        <p class="text-center text-gray-500 text-xs mt-4">ระบบแจ้งซ่อมเทศบาล by Nayak Pong</p>
     </div>
-
+    
     <div id="loading" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
         <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500"></div>
     </div>
 
     <script>
-        // ✅ ผมใส่ลิ้งค์ที่ถูกต้องให้ตรงนี้แล้วครับ (บรรทัดที่ 67)
-        const WEBHOOK_URL = 'https://hook.eu1.make.com/dsf3k4it2o2hsu033y0mh42wesia1gjy'; 
+        // ✅ ผมใส่ลิ้งค์ Webhook เดิมของท่านให้แล้วครับ ไม่ต้องแก้
+        const WEBHOOK_URL = 'https://hook.eu1.make.com/8uj45pto8ouoba79ndgs8urhwork3ame'; 
 
-        document.getElementById('techForm').addEventListener('submit', async function(e) {
+        window.onload = function() { initializeLiff(); };
+
+        function previewImage(event) {
+            const file = event.target.files[0];
+            if(file){
+                const reader = new FileReader();
+                reader.onload = function(){
+                    const output = document.getElementById('preview');
+                    output.src = reader.result;
+                    output.classList.remove('hidden');
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function getLocation() {
+            const status = document.getElementById('locationStatus');
+            if (navigator.geolocation) {
+                status.innerHTML = "⏳ กำลังค้นหาตำแหน่ง...";
+                navigator.geolocation.getCurrentPosition(showPosition, showError);
+            } else { status.innerHTML = "❌ ไม่รองรับ GPS"; }
+        }
+
+        function showPosition(position) {
+            document.getElementById('lat').value = position.coords.latitude;
+            document.getElementById('long').value = position.coords.longitude;
+            document.getElementById('locationStatus').innerHTML = "✅ เรียบร้อย";
+            document.getElementById('locationStatus').className = "text-sm text-green-600 mt-2 text-center font-bold";
+        }
+
+        function showError(error) {
+            document.getElementById('locationStatus').innerHTML = "❌ ไม่เจอพิกัด (กรุณาเปิด GPS)";
+        }
+
+        async function initializeLiff() {
+            try {
+                if (liff.isLoggedIn()) {
+                    const profile = await liff.getProfile();
+                    document.getElementById('userId').value = profile.userId;
+                }
+            } catch (err) { console.log(err); }
+        }
+
+        document.getElementById('repairForm').addEventListener('submit', async function(e) {
             e.preventDefault();
+            
+            // เช็คว่าเลือกประเภทหรือยัง
+            const category = document.getElementById('category').value;
+            if(!category) { Swal.fire('ลืมเลือกหัวข้อ', 'กรุณาเลือกประเภทการแจ้งซ่อมด้วยครับ', 'warning'); return; }
+
+            const imageInput = document.getElementById('imageInput');
+            if(imageInput.files.length === 0){ Swal.fire('ลืมรูป', 'ถ่ายรูปก่อนนะครับ', 'warning'); return; }
+
             document.getElementById('loading').classList.remove('hidden');
             document.getElementById('submitBtn').disabled = true;
-            
+
             const formData = new FormData(this);
             try {
-                if(WEBHOOK_URL.includes('รอใส่')){
-                   throw new Error('NoWebhook');
-                }
-
-                await fetch(WEBHOOK_URL, { method: 'POST', body: formData });
-                Swal.fire('สำเร็จ', 'แจ้งเตือนชาวบ้านเรียบร้อย!', 'success').then(() => window.location.reload());
-            } catch (err) {
-                if(err.message === 'NoWebhook'){
-                    Swal.fire('ลืมใส่ลิ้งค์!', 'ต้องไปเอา Webhook จาก Make มาใส่ในโค้ดก่อนครับ', 'warning');
-                } else {
-                    Swal.fire('ผิดพลาด', 'ส่งข้อมูลไม่สำเร็จ', 'error');
-                }
+                const response = await fetch(WEBHOOK_URL, { method: 'POST', body: formData });
+                if (response.ok) {
+                    Swal.fire('สำเร็จ!', 'รับแจ้งเรียบร้อย', 'success').then(() => {
+                        if (liff.isInClient()) { liff.closeWindow(); } else { window.location.reload(); }
+                    });
+                } else { throw new Error('Error'); }
+            } catch (error) {
+                Swal.fire('แย่แล้ว', 'ส่งไม่ผ่าน ลองใหม่อีกที', 'error');
             } finally {
                 document.getElementById('loading').classList.add('hidden');
                 document.getElementById('submitBtn').disabled = false;
