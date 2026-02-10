@@ -8,10 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-
-    <style>
-        body { font-family: 'Kanit', sans-serif; }
-    </style>
+    <style> body { font-family: 'Kanit', sans-serif; } </style>
 </head>
 <body class="bg-blue-50 min-h-screen">
 
@@ -21,25 +18,35 @@
             
             <form id="repairForm" class="space-y-4">
                 
+                <div class="bg-yellow-50 p-3 rounded-lg border border-yellow-200 shadow-sm">
+                    <label class="block text-gray-700 font-bold mb-2">📢 แจ้งเรื่องเกี่ยวกับอะไร? *</label>
+                    <select name="category" id="category" required 
+                            class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-lg">
+                        <option value="" disabled selected>-- กรุณาจิ้มเพื่อเลือกหัวข้อ --</option>
+                        <option value="ไฟฟ้าสาธารณะ">💡 ไฟฟ้าสาธารณะ (ไฟดับ/กิ่งไม้พาด)</option>
+                        <option value="ประปา/ท่อระบายน้ำ">🚰 ประปา / ท่อระบายน้ำ</option>
+                        <option value="ถนน/ทางเท้า">🛣️ ถนน / ทางเท้าชำรุด</option>
+                        <option value="ขยะ/ความสะอาด">🗑️ ขยะ / ความสะอาด</option>
+                        <option value="อื่นๆ">📝 อื่นๆ</option>
+                    </select>
+                </div>
+
                 <div>
                     <label class="block text-gray-700 font-bold mb-2">ชื่อผู้แจ้ง *</label>
                     <input type="text" name="name" id="name" required 
-                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                           placeholder="ชื่อ-นามสกุล">
+                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="ชื่อ-นามสกุล">
                 </div>
 
                 <div>
                     <label class="block text-gray-700 font-bold mb-2">เบอร์โทรศัพท์ติดต่อ *</label>
                     <input type="tel" name="phone" id="phone" required 
-                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                           placeholder="กรอกเบอร์โทรศัพท์ (จำเป็น)">
+                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="กรอกเบอร์โทรศัพท์">
                 </div>
 
                 <div>
                     <label class="block text-gray-700 font-bold mb-2">รายละเอียดอาการ *</label>
                     <textarea name="detail" id="detail" rows="3" required 
-                              class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                              placeholder="เช่น ไฟดับ, ท่อแตก, ถนนเป็นหลุม"></textarea>
+                              class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="ระบุอาการ และ จุดสังเกต"></textarea>
                 </div>
 
                 <div>
@@ -47,11 +54,7 @@
                     <div class="flex items-center justify-center w-full">
                         <label class="flex flex-col w-full h-32 border-4 border-blue-200 border-dashed hover:bg-gray-100 hover:border-gray-300 rounded-lg cursor-pointer">
                             <div class="flex flex-col items-center justify-center pt-7">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-gray-400 group-hover:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                                </svg>
-                                <p class="pt-1 text-sm tracking-wider text-gray-400 group-hover:text-gray-600">กดเพื่อถ่ายรูป หรือ เลือกรูป</p>
+                                <p class="pt-1 text-sm tracking-wider text-gray-400">กดเพื่อถ่ายรูป 📸</p>
                             </div>
                             <input type="file" name="image" id="imageInput" class="hidden" accept="image/*" capture="environment" onchange="previewImage(event)" required />
                         </label>
@@ -61,40 +64,34 @@
 
                 <div>
                     <button type="button" onclick="getLocation()" 
-                            class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg flex justify-center items-center gap-2 transition duration-300">
-                        📍 กดปุ่มนี้เพื่อระบุตำแหน่ง
+                            class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg flex justify-center items-center gap-2">
+                        📍 ระบุตำแหน่ง GPS
                     </button>
                     <p id="locationStatus" class="text-sm text-gray-500 mt-2 text-center"></p>
-                    
                     <input type="hidden" name="lat" id="lat">
                     <input type="hidden" name="long" id="long">
                     <input type="hidden" name="userId" id="userId">
                 </div>
 
                 <button type="submit" id="submitBtn" 
-                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg transform transition hover:scale-105 mt-6">
-                    🚀 ยืนยันการแจ้งซ่อม
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg mt-6 transform transition hover:scale-105">
+                    🚀 ส่งเรื่องแจ้งซ่อม
                 </button>
-
             </form>
         </div>
         <p class="text-center text-gray-500 text-xs mt-4">ระบบแจ้งซ่อมเทศบาล by Nayak Pong</p>
     </div>
-
+    
     <div id="loading" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
         <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500"></div>
     </div>
 
     <script>
-        // --- ส่วนตั้งค่า (ใส่ลิ้งค์ Webhook ให้เรียบร้อยแล้วครับ) ---
+        // ✅ ผมใส่ลิ้งค์ Webhook เดิมของท่านให้แล้วครับ ไม่ต้องแก้
         const WEBHOOK_URL = 'https://hook.eu1.make.com/8uj45pto8ouoba79ndgs8urhwork3ame'; 
 
-        // เริ่มต้นทำงาน
-        window.onload = function() {
-            initializeLiff();
-        };
+        window.onload = function() { initializeLiff(); };
 
-        // ฟังก์ชันแสดงรูปตัวอย่าง
         function previewImage(event) {
             const file = event.target.files[0];
             if(file){
@@ -108,100 +105,60 @@
             }
         }
 
-        // ฟังก์ชันดึงพิกัด GPS
         function getLocation() {
             const status = document.getElementById('locationStatus');
             if (navigator.geolocation) {
                 status.innerHTML = "⏳ กำลังค้นหาตำแหน่ง...";
                 navigator.geolocation.getCurrentPosition(showPosition, showError);
-            } else { 
-                status.innerHTML = "❌ เบราว์เซอร์นี้ไม่รองรับ GPS";
-            }
+            } else { status.innerHTML = "❌ ไม่รองรับ GPS"; }
         }
 
         function showPosition(position) {
             document.getElementById('lat').value = position.coords.latitude;
             document.getElementById('long').value = position.coords.longitude;
-            document.getElementById('locationStatus').innerHTML = "✅ ระบุตำแหน่งเรียบร้อย: " + position.coords.latitude.toFixed(5) + ", " + position.coords.longitude.toFixed(5);
+            document.getElementById('locationStatus').innerHTML = "✅ เรียบร้อย";
             document.getElementById('locationStatus').className = "text-sm text-green-600 mt-2 text-center font-bold";
         }
 
         function showError(error) {
-            let msg = "❌ ไม่สามารถระบุตำแหน่งได้";
-            switch(error.code) {
-                case error.PERMISSION_DENIED:
-                    msg = "❌ ผู้ใช้ปฏิเสธการเข้าถึงตำแหน่ง (กรุณาเปิด GPS)";
-                    break;
-                case error.POSITION_UNAVAILABLE:
-                    msg = "❌ สัญญาณ GPS ไม่ดี";
-                    break;
-                case error.TIMEOUT:
-                    msg = "❌ หมดเวลาในการค้นหาตำแหน่ง";
-                    break;
-            }
-            document.getElementById('locationStatus').innerHTML = msg;
-            document.getElementById('locationStatus').className = "text-sm text-red-500 mt-2 text-center";
+            document.getElementById('locationStatus').innerHTML = "❌ ไม่เจอพิกัด (กรุณาเปิด GPS)";
         }
 
-        // ฟังก์ชันเริ่มต้น LIFF
         async function initializeLiff() {
             try {
-                // await liff.init({ liffId: "YOUR_LIFF_ID" }); // ถ้ามี LIFF ID ใส่ตรงนี้
                 if (liff.isLoggedIn()) {
                     const profile = await liff.getProfile();
                     document.getElementById('userId').value = profile.userId;
                 }
-            } catch (err) {
-                console.log('LIFF Initialization failed ', err);
-            }
+            } catch (err) { console.log(err); }
         }
 
-        // ฟังก์ชันส่งข้อมูลเมื่อกดปุ่ม Submit
         document.getElementById('repairForm').addEventListener('submit', async function(e) {
             e.preventDefault();
+            
+            // เช็คว่าเลือกประเภทหรือยัง
+            const category = document.getElementById('category').value;
+            if(!category) { Swal.fire('ลืมเลือกหัวข้อ', 'กรุณาเลือกประเภทการแจ้งซ่อมด้วยครับ', 'warning'); return; }
 
-            // ตรวจสอบว่ามีรูปภาพหรือไม่
             const imageInput = document.getElementById('imageInput');
-            if(imageInput.files.length === 0){
-                Swal.fire('กรุณาแนบรูป', 'ต้องถ่ายรูปหน้างานประกอบการแจ้งซ่อมครับ', 'warning');
-                return;
-            }
+            if(imageInput.files.length === 0){ Swal.fire('ลืมรูป', 'ถ่ายรูปก่อนนะครับ', 'warning'); return; }
 
-            // แสดงตัวโหลด
             document.getElementById('loading').classList.remove('hidden');
             document.getElementById('submitBtn').disabled = true;
-            document.getElementById('submitBtn').innerText = "⏳ กำลังส่งข้อมูล...";
 
             const formData = new FormData(this);
-
             try {
-                const response = await fetch(WEBHOOK_URL, {
-                    method: 'POST',
-                    body: formData
-                });
-
+                const response = await fetch(WEBHOOK_URL, { method: 'POST', body: formData });
                 if (response.ok) {
-                    Swal.fire({
-                        title: 'ส่งเรื่องสำเร็จ!',
-                        text: 'เจ้าหน้าที่ได้รับข้อมูลเรียบร้อยแล้วครับ',
-                        icon: 'success',
-                        confirmButtonText: 'ปิดหน้าต่าง'
-                    }).then(() => {
-                        if (liff.isInClient()) {
-                            liff.closeWindow();
-                        } else {
-                            window.location.reload();
-                        }
+                    Swal.fire('สำเร็จ!', 'รับแจ้งเรียบร้อย', 'success').then(() => {
+                        if (liff.isInClient()) { liff.closeWindow(); } else { window.location.reload(); }
                     });
-                } else {
-                    throw new Error('Server Error');
-                }
+                } else { throw new Error('Error'); }
             } catch (error) {
-                Swal.fire('เกิดข้อผิดพลาด', 'ส่งข้อมูลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error');
+                Swal.fire('แย่แล้ว', 'ส่งไม่ผ่าน ลองใหม่อีกที', 'error');
             } finally {
                 document.getElementById('loading').classList.add('hidden');
                 document.getElementById('submitBtn').disabled = false;
-                document.getElementById('submitBtn').innerText = "🚀 ยืนยันการแจ้งซ่อม";
             }
         });
     </script>
