@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบจัดการงานซ่อม</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style> body { font-family: 'Kanit', sans-serif; } </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-4">
+
+    <div class="max-w-md mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
+        <div class="bg-blue-600 p-6 text-white">
+            <h2 class="text-xl font-bold text-center mb-2">🔧 จัดการใบงานซ่อม</h2>
+            <div class="bg-blue-500 rounded-lg p-4 text-sm space-y-2">
+                <p><strong>🔢 เลขที่ใบงาน:</strong> <span id="showCaseId">...</span></p>
+                <p><strong>👤 ผู้แจ้ง:</strong> <span id="showName">...</span></p>
+                <p><strong>📞 เบอร์โทร:</strong> <a id="callLink" href="#" class="underline text-yellow-300">กดเพื่อโทรออก</a></p>
+                <p><strong>📝 อาการ:</strong> <span id="showDetail">...</span></p>
+            </div>
+        </div>
+
+        <form id="techForm" class="p-6 space-y-6">
+            <input type="hidden" name="caseId" id="caseId">
+            <input type="hidden" name="userId" id="userId">
+            <input type="hidden" name="actionType" id="actionType">
+
+            <div class="border-b pb-6">
+                <h3 class="font-bold text-gray-700 mb-2">1. สำหรับช่างรับเรื่อง</h3>
+                <button type="button" onclick="submitForm('accept')" 
+                        class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 rounded-lg shadow transition flex justify-center items-center gap-2">
+                    🚧 กดเพื่อรับงาน (แจ้งชาวบ้านว่ากำลังไป)
+                </button>
+            </div>
+
+            <div>
+                <h3 class="font-bold text-gray-700 mb-2">2. สำหรับช่างส่งงาน (เสร็จแล้ว)</h3>
+                <label class="block text-sm text-gray-600 mb-1">รูปถ่ายหลังซ่อมเสร็จ *</label>
+                <input type="file" name="image" id="imageInput" accept="image/*" class="w-full mb-3 text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-blue-50 file:text-blue-700">
+                
+                <textarea name="message" id="message" rows="2" class="w-full border rounded-lg p-2 mb-3" placeholder="ข้อความถึงชาวบ้าน (เช่น ซ่อมเสร็จแล้วครับ)"></textarea>
+
+                <button type="button" onclick="submitForm('finish')" 
+                        class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg shadow transition flex justify-center items-center gap-2">
+                    ✅ ยืนยันปิดงาน (ส่งรูปให้ชาวบ้าน)
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div id="loading" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500"></div>
+    </div>
+
+    <script>
+        // ⚠️ ใส่ Webhook อันใหม่สำหรับช่าง ตรงนี้
+        const WEBHOOK_URL = 'https://hook.eu1.make.com/xxxxxxxxxxxxxxxxxxxxxx'; 
+
+        // ดึงค่าจากลิงค์มาโชว์ตอนเปิดเว็บ
+        window.onload = function() {
+            const params = new URLSearchParams(window.location.search);
+            document.getElementById('showCaseId').innerText = params.get('id') || '-';
+            document.getElementById('showName').innerText = params.get('name') || '-';
+            document.getElementById('showDetail').innerText = params.get('detail') || '-';
+            
+            // ตั้งค่าปุ่มโทรออก
+            const phone = params.get('phone') || '';
+            document.getElementById('callLink').innerText = phone;
+            document.getElementById('callLink').href = 'tel:' + phone;
+
+            // เก็บค่าใส่กล่องซ่อน เตรียมส่ง
+            document.getElementById('caseId').value = params.get('id');
+            document.getElementById('userId').value = params.get('userid');
+        };
+
+        // ฟังก์ชันส่งข้อมูล
+        async function submitForm(type) {
+            document.getElementById('actionType').value = type; // บอกระบบว่ากดปุ่มไหน (accept หรือ finish)
+            
+            // ถ้ากดปิดงาน ต้องเช็ครูป
+            if(type === 'finish') {
+                const img = document.getElementById('imageInput');
+                if(img.files.length === 0) { Swal.fire('ลืมรูป', 'ต้องถ่ายรูปงานเสร็จก่อนครับ', 'warning'); return; }
+            }
+
+            document.getElementById('loading').classList.remove('hidden');
+            const formData = new FormData(document.getElementById('techForm'));
+
+            try {
+                await fetch(WEBHOOK_URL, { method: 'POST', body: formData });
+                Swal.fire('สำเร็จ', 'ระบบได้แจ้งเตือนชาวบ้านเรียบร้อยแล้ว', 'success').then(() => window.close());
+            } catch (err) {
+                Swal.fire('Error', 'ส่งข้อมูลไม่สำเร็จ', 'error');
+            } finally {
+                document.getElementById('loading').classList.add('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
