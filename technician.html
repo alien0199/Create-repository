@@ -1,209 +1,221 @@
 <!DOCTYPE html>
+
 <html lang="th">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="referrer" content="no-referrer">
-    <title>ระบบจัดการงานซ่อม</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <style> body { font-family: 'Kanit', sans-serif; } </style>
+<meta charset="utf-8"/><meta content="no-referrer" name="referrer"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ระบบจัดการงานซ่อม</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<style> body { font-family: 'Kanit', sans-serif; } </style>
 </head>
 <body class="bg-gray-100 min-h-screen p-4">
-
-    <div class="max-w-md mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
-        
-        <div class="bg-blue-600 p-6 text-white">
-            <h2 class="text-xl font-bold text-center mb-2">🔧 จัดการใบงานซ่อม</h2>
-            <div class="bg-blue-500 rounded-lg p-4 text-sm space-y-2">
-                <p><strong>🔢 เลขที่ใบงาน:</strong> <span id="showCaseId">...</span></p>
-                <p><strong>👤 ผู้แจ้ง:</strong> <span id="showName">...</span></p>
-                <p><strong>📞 เบอร์โทร:</strong> <a href="#" id="callLink" class="underline text-yellow-300">กดเพื่อโทรออก</a></p>
-                <p><strong>📝 อาการ:</strong> <span id="showDetail">...</span></p>
-            </div>
-        </div>
-
-        <div class="bg-white p-4 border-b space-y-4">
-            <div>
-                <p class="font-bold text-gray-700 mb-2">📸 รูปหน้างาน (คลิกเพื่อดู)</p>
-                
-                <div id="photoListContainer" class="flex flex-col gap-2">
-                    <p class="text-sm text-gray-400 italic">กำลังโหลดรายการรูป...</p>
-                </div>
-
-            </div>
-
-            <div>
-                <p class="font-bold text-gray-700 mb-2">🗺️ แผนที่</p>
-                <a id="mapLink" href="#" target="_blank" rel="noopener" class="block w-full text-center bg-blue-50 text-blue-700 font-bold py-2 rounded-lg hover:bg-blue-100 transition">
-                    📍 เปิดแผนที่ใน Google Maps
-                </a>
-                <p id="noLocation" class="hidden text-sm text-gray-500 mt-1 text-center">ไม่มีพิกัดแนบมา</p>
-            </div>
-        </div>
-
-        <form id="techForm" class="p-6 space-y-6">
-            <input type="hidden" id="caseId" name="caseId">
-            <input type="hidden" id="userId" name="userId">
-            <input type="hidden" id="actionType" name="actionType">
-            
-            <div class="border-b pb-6">
-                <h3 class="font-bold text-gray-700 mb-2">1. สำหรับช่างรับเรื่อง</h3>
-                <button type="button" onclick="submitForm('accept')" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 rounded-lg shadow transition flex justify-center items-center gap-2">
+<div class="max-w-md mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
+<div class="bg-blue-600 p-6 text-white">
+<h2 class="text-xl font-bold text-center mb-2">🔧 จัดการใบงานซ่อม</h2>
+<div class="bg-blue-500 rounded-lg p-4 text-sm space-y-2">
+<p><strong>🔢 เลขที่ใบงาน:</strong> <span id="showCaseId">...</span></p>
+<p><strong>👤 ผู้แจ้ง:</strong> <span id="showName">...</span></p>
+<p><strong>📞 เบอร์โทร:</strong> <a class="underline text-yellow-300" href="#" id="callLink">กดเพื่อโทรออก</a></p>
+<p><strong>📝 อาการ:</strong> <span id="showDetail">...</span></p>
+</div>
+</div>
+<!-- ✅ เพิ่มส่วนแสดงรูปหน้างาน + แผนที่ (รับค่าจากลิงก์) -->
+<div class="bg-white p-4 border-b space-y-4">
+<div>
+<p class="font-bold text-gray-700 mb-2">📸 รูปหน้างาน</p>
+<img alt="รูปหน้างาน" class="hidden w-full rounded-lg border shadow" crossorigin="anonymous" id="issuePhoto" referrerpolicy="no-referrer"/>
+<p class="text-sm text-gray-500" id="noIssuePhoto">ไม่มีรูปแนบในลิงก์</p><p class="hidden text-sm text-red-600" id="issuePhotoError">โหลดรูปไม่สำเร็จ <a class="underline" href="#" id="issuePhotoOpen" rel="noopener" target="_blank">กดเปิดรูป</a></p>
+</div>
+<div>
+<p class="font-bold text-gray-700 mb-2">🗺️ แผนที่</p>
+<a class="block w-full text-center bg-blue-50 text-blue-700 font-bold py-2 rounded-lg" id="mapLink" rel="noopener" target="_blank">เปิดแผนที่ใน Google Maps</a>
+<iframe class="hidden w-full h-56 mt-2 rounded-lg border" id="mapFrame" loading="lazy"></iframe>
+<p class="hidden text-sm text-gray-500 mt-1" id="noLocation">ไม่มีพิกัดแนบในลิงก์</p>
+</div>
+</div>
+<form class="p-6 space-y-6" id="techForm">
+<input id="caseId" name="caseId" type="hidden"/>
+<input id="userId" name="userId" type="hidden"/>
+<input id="actionType" name="actionType" type="hidden"/>
+<input id="lat" name="lat" type="hidden"/>
+<input id="long" name="long" type="hidden"/>
+<input id="photoUrl" name="photoUrl" type="hidden"/>
+<input id="afterPhotoUrl" name="afterPhotoUrl" type="hidden"/>
+<div class="border-b pb-6">
+<h3 class="font-bold text-gray-700 mb-2">1. สำหรับช่างรับเรื่อง</h3>
+<button class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 rounded-lg shadow transition flex justify-center items-center gap-2" onclick="submitForm('accept')" type="button">
                     🚧 กดเพื่อรับงาน (แจ้งชาวบ้านว่ากำลังไป)
                 </button>
-            </div>
-
-            <div>
-                <h3 class="font-bold text-gray-700 mb-2">2. สำหรับช่างส่งงาน (เสร็จแล้ว)</h3>
-                <label class="block text-sm text-gray-600 mb-1">รูปถ่ายหลังซ่อมเสร็จ *</label>
-                <input type="file" id="imageInput" name="image" accept="image/*" class="w-full mb-3 text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition">
-                
-                <textarea id="message" name="message" rows="2" class="w-full border rounded-lg p-2 mb-3 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="ข้อความถึงชาวบ้าน (เช่น ซ่อมเสร็จแล้วครับ)"></textarea>
-                
-                <button type="button" onclick="submitForm('finish')" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg shadow transition flex justify-center items-center gap-2">
+</div>
+<div>
+<h3 class="font-bold text-gray-700 mb-2">2. สำหรับช่างส่งงาน (เสร็จแล้ว)</h3>
+<label class="block text-sm text-gray-600 mb-1">รูปถ่ายหลังซ่อมเสร็จ *</label>
+<input accept="image/*" class="w-full mb-3 text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-blue-50 file:text-blue-700" id="imageInput" name="image" type="file"/>
+<textarea class="w-full border rounded-lg p-2 mb-3" id="message" name="message" placeholder="ข้อความถึงชาวบ้าน (เช่น ซ่อมเสร็จแล้วครับ)" rows="2"></textarea>
+<button class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg shadow transition flex justify-center items-center gap-2" onclick="submitForm('finish')" type="button">
                     ✅ ยืนยันปิดงาน (ส่งรูปให้ชาวบ้าน)
                 </button>
-            </div>
-        </form>
-
-    </div>
-
-    <div id="loading" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
-        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500"></div>
-    </div>
-
-    <script>
-        // ⚠️ ใส่ Webhook URL ของคุณที่นี่
+</div>
+</form>
+</div>
+<div class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50" id="loading">
+<div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500"></div>
+</div>
+<script>
+        // ⚠️ ใส่ Webhook อันใหม่สำหรับช่าง ตรงนี้
         const WEBHOOK_URL = 'https://hook.eu1.make.com/9mgmk9fvut2zuu9ermdqocvkmnh5na9z';
-        // ✅ API Key ImgBB
+
+        // ✅ ใส่ API Key ของ ImgBB (ห้ามเผยแพร่คีย์นี้)
         const IMGBB_API_KEY = '90bdd186ac4a75a080d137e88c123b84';
 
-        window.onload = function() {
-            const params = new URLSearchParams(window.location.search);
-
-            // 1. แสดงข้อมูลพื้นฐาน
-            document.getElementById('showCaseId').innerText = params.get('id') || '-';
-            document.getElementById('showName').innerText = params.get('name') || '-';
-            document.getElementById('showDetail').innerText = params.get('detail') || '-';
-            
-            const phone = params.get('phone') || '';
-            const callLink = document.getElementById('callLink');
-            callLink.innerText = phone || 'ไม่มีเบอร์';
-            callLink.href = phone ? 'tel:' + phone : '#';
-
-            // เก็บค่าเข้าฟอร์ม
-            document.getElementById('caseId').value = params.get('id');
-            document.getElementById('userId').value = params.get('userid');
-
-            // 2. จัดการรูปภาพ (รองรับหลายรูป)
-            const photoListContainer = document.getElementById('photoListContainer');
-            photoListContainer.innerHTML = ''; // ล้างค่าเก่า
-
-            // รับค่า photos (หลายรูปคั่นด้วย ,) หรือ photoUrl (รูปเดียวแบบเดิม)
-            const photosParam = params.get('photos') || params.get('photoUrl') || '';
-            
-            let photoArray = [];
-            if (photosParam) {
-                // แยกข้อความด้วยเครื่องหมายจุลภาค (,) และลบช่องว่าง
-                photoArray = photosParam.split(',').map(url => url.trim()).filter(url => url.length > 0);
-            }
-
-            if (photoArray.length > 0) {
-                // วนลูปสร้างปุ่มตามจำนวนรูป
-                photoArray.forEach((url, index) => {
-                    const btn = document.createElement('a');
-                    btn.href = url;
-                    btn.target = '_blank';
-                    btn.rel = 'noopener';
-                    btn.className = 'flex items-center justify-between w-full bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 font-medium py-3 px-4 rounded-lg transition group';
-                    
-                    btn.innerHTML = `
-                        <span class="flex items-center gap-2">
-                            📸 <span>เปิดดูรูปที่ ${index + 1}</span>
-                        </span>
-                        <span class="text-gray-400 group-hover:text-blue-500">↗</span>
-                    `;
-                    photoListContainer.appendChild(btn);
-                });
-            } else {
-                // กรณีไม่มีรูปเลย
-                photoListContainer.innerHTML = `<div class="text-sm text-gray-400 text-center py-2 border border-dashed rounded bg-gray-50">ไม่มีรูปแนบมา</div>`;
-            }
-
-            // 3. จัดการแผนที่
-            const lat = params.get('lat');
-            const lng = params.get('long');
-            const mapLink = document.getElementById('mapLink');
-            
-            if(lat && lng) {
-                // ลิงก์เปิดแอป Google Maps นำทางได้เลย
-                mapLink.href = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
-            } else {
-                mapLink.classList.add('hidden');
-                document.getElementById('noLocation').classList.remove('hidden');
-            }
-        };
-
-        // ฟังก์ชันอัปรูปขึ้น ImgBB
-        async function uploadToImgBB(file){
+        function fileToBase64(file){
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
-                reader.readAsDataURL(file);
-                reader.onload = async () => {
-                    try {
-                        const base64 = String(reader.result).split(',')[1];
-                        const fd = new FormData();
-                        fd.append('image', base64);
-                        const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
-                            method: 'POST', body: fd
-                        });
-                        const data = await res.json();
-                        if(data.success) resolve(data.data.url);
-                        else reject('Upload Failed');
-                    } catch(e) { reject(e); }
+                reader.onload = () => {
+                    const base64 = String(reader.result).split(',')[1];
+                    resolve(base64);
                 };
                 reader.onerror = reject;
+                reader.readAsDataURL(file);
             });
         }
 
-        async function submitForm(type) {
-            document.getElementById('actionType').value = type;
-            const loading = document.getElementById('loading');
+        async function uploadToImgBB(file){
+            const base64 = await fileToBase64(file);
+            const fd = new FormData();
+            fd.append('image', base64);
+            const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+                method: 'POST',
+                body: fd
+            });
+            const data = await res.json();
+            if(!data || !data.success) throw new Error('ImgBB upload failed');
+            return data.data.url;
+        }
+ 
+
+        // ดึงค่าจากลิงค์มาโชว์ตอนเปิดเว็บ
+        window.onload = function() {
+            const params = new URLSearchParams(window.location.search);
+            // ✅ ทำความสะอาดค่าที่มากับ URL (กันวงเล็บ/ช่องว่าง/ข้อความปน)
+            const cleanParam = (v) => (v || '').toString().trim().replace(/^[\s(]+|[\s)]+$/g,'');
+            const getParam = (k) => cleanParam(params.get(k));
+
+            document.getElementById('showCaseId').innerText = getParam('id') || '-';
+            document.getElementById('showName').innerText = getParam('name') || '-';
+            document.getElementById('showDetail').innerText = getParam('detail') || '-';
             
-            if(type === 'finish') {
-                const img = document.getElementById('imageInput');
-                if(img.files.length === 0) { Swal.fire('แจ้งเตือน', 'กรุณาถ่ายรูปงานที่เสร็จแล้ว', 'warning'); return; }
+            // ตั้งค่าปุ่มโทรออก
+            const phone = getParam('phone') || '';
+            document.getElementById('callLink').innerText = phone;
+            document.getElementById('callLink').href = 'tel:' + phone;
+
+            // เก็บค่าใส่กล่องซ่อน เตรียมส่ง
+            document.getElementById('caseId').value = getParam('id');
+            document.getElementById('userId').value = (getParam('userid') || getParam('userId') || getParam('userID'));
+            // ✅ เก็บพิกัด/รูปหน้างานไว้ในฟอร์ม
+            const lat = getParam('lat') || '';
+            const lng = getParam('long') || '';
+            let photo = getParam('photo') || getParam('photoUrl') || '';
+            // ถ้ารูปไม่มี http/https ให้เติม https:// ให้เป็นลิงก์สมบูรณ์
+            if(photo && !/^https?:\/\//i.test(photo)){
+                photo = 'https://' + photo.replace(/^\/+/, '');
+            }
+            document.getElementById('lat').value = lat;
+            document.getElementById('long').value = lng;
+            document.getElementById('photoUrl').value = photo;
+
+            // ✅ แสดงรูปหน้างาน
+            const issuePhoto = document.getElementById('issuePhoto');
+            // กันบางเบราว์เซอร์บล็อค hotlink/referrer
+            try{ issuePhoto.referrerPolicy = 'no-referrer'; }catch(e){}
+            const noIssuePhoto = document.getElementById('noIssuePhoto');
+            const issuePhotoError = document.getElementById('issuePhotoError');
+            const issuePhotoOpen = document.getElementById('issuePhotoOpen');
+
+            // รีเซ็ตสถานะ
+            issuePhoto.classList.add('hidden');
+            noIssuePhoto.classList.remove('hidden');
+            if(issuePhotoError) issuePhotoError.classList.add('hidden');
+
+            if(photo){
+                // ถ้ามีรูป ให้พยายามแสดง
+                issuePhoto.onload = function(){
+                    issuePhoto.classList.remove('hidden');
+                    noIssuePhoto.classList.add('hidden');
+                    if(issuePhotoError) issuePhotoError.classList.add('hidden');
+                };
+
+                issuePhoto.onerror = function(){
+                    // ลองผ่าน proxy 1 ครั้ง เผื่อโดนบล็อค hotlink
+                    if(!issuePhoto.dataset.triedProxy){
+                        issuePhoto.dataset.triedProxy = '1';
+                        const clean = photo.replace(/^https?:\/\//,'');
+                        issuePhoto.src = 'https://images.weserv.nl/?url=' + encodeURIComponent(clean);
+                        return;
+                    }
+                    // ถ้ายังไม่ได้ ให้โชว์ลิงก์เปิดรูปแทน
+                    issuePhoto.classList.add('hidden');
+                    noIssuePhoto.classList.add('hidden');
+                    if(issuePhotoError){
+                        issuePhotoError.classList.remove('hidden');
+                        if(issuePhotoOpen) issuePhotoOpen.href = photo;
+                    }
+                };
+
+                // ตั้งค่า src (รอบแรก)
+                issuePhoto.dataset.triedProxy = '';
+                issuePhoto.src = photo;
+            }
+            // ✅ แสดงแผนที่
+            const mapLink = document.getElementById('mapLink');
+            const mapFrame = document.getElementById('mapFrame');
+            const noLocation = document.getElementById('noLocation');
+            if(lat && lng){
+                const mapUrl = `https://www.google.com/maps?q=${lat},${lng}`;
+                mapLink.href = mapUrl;
+                mapFrame.src = `https://maps.google.com/maps?q=${lat},${lng}&z=16&output=embed`;
+                mapFrame.classList.remove('hidden');
+            } else {
+                mapLink.href = '#';
+                mapLink.classList.add('opacity-50','pointer-events-none');
+                noLocation.classList.remove('hidden');
             }
 
-            loading.classList.remove('hidden');
+        };
+
+        // ฟังก์ชันส่งข้อมูล
+        async function submitForm(type) {
+            document.getElementById('actionType').value = type; // บอกระบบว่ากดปุ่มไหน (accept หรือ finish)
+            
+            // ถ้ากดปิดงาน ต้องเช็ครูป
+            if(type === 'finish') {
+                const img = document.getElementById('imageInput');
+                if(img.files.length === 0) { Swal.fire('ลืมรูป', 'ต้องถ่ายรูปงานเสร็จก่อนครับ', 'warning'); return; }
+            }
+
+            document.getElementById('loading').classList.remove('hidden');
             const formData = new FormData(document.getElementById('techForm'));
 
             try {
+                // ✅ ถ้าปิดงาน ให้อัปโหลดรูปหลังซ่อมไป ImgBB แล้วส่งเป็น URL (ไม่ส่งไฟล์เข้า Make)
                 if(type === 'finish'){
-                    // อัปรูปก่อนส่ง
-                    const imgFile = document.getElementById('imageInput').files[0];
-                    const photoUrl = await uploadToImgBB(imgFile);
-                    formData.append('afterPhotoUrl', photoUrl); // ส่ง URL ไปแทนไฟล์
+                    const img = document.getElementById('imageInput');
+                    const afterUrl = await uploadToImgBB(img.files[0]);
+                    document.getElementById('afterPhotoUrl').value = afterUrl;
+
+                    formData.set('afterPhotoUrl', afterUrl);
                     formData.delete('image');
                 }
 
                 await fetch(WEBHOOK_URL, { method: 'POST', body: formData });
-                
-                Swal.fire({
-                    title: 'สำเร็จ!',
-                    text: 'บันทึกข้อมูลเรียบร้อยแล้ว',
-                    icon: 'success',
-                    timer: 2000,
-                    showConfirmButton: false
-                }).then(() => window.close());
-
+                Swal.fire('สำเร็จ', 'ระบบได้แจ้งเตือนชาวบ้านเรียบร้อยแล้ว', 'success').then(() => window.close());
             } catch (err) {
-                console.error(err);
-                Swal.fire('ผิดพลาด', 'ส่งข้อมูลไม่สำเร็จ กรุณาลองใหม่', 'error');
+                Swal.fire('Error', 'ส่งข้อมูลไม่สำเร็จ', 'error');
             } finally {
-                loading.classList.add('hidden');
+                document.getElementById('loading').classList.add('hidden');
             }
         }
     </script>
