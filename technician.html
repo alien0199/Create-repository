@@ -1,79 +1,69 @@
 <!DOCTYPE html>
+
 <html lang="th">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบจัดการงานซ่อม</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <style> body { font-family: 'Kanit', sans-serif; } </style>
+<meta charset="utf-8"/><meta content="no-referrer" name="referrer"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ระบบจัดการงานซ่อม</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<style> body { font-family: 'Kanit', sans-serif; } </style>
 </head>
 <body class="bg-gray-100 min-h-screen p-4">
-
-    <div class="max-w-md mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
-        <div class="bg-blue-600 p-6 text-white">
-            <h2 class="text-xl font-bold text-center mb-2">🔧 จัดการใบงานซ่อม</h2>
-            <div class="bg-blue-500 rounded-lg p-4 text-sm space-y-2">
-                <p><strong>🔢 เลขที่ใบงาน:</strong> <span id="showCaseId">...</span></p>
-                <p><strong>👤 ผู้แจ้ง:</strong> <span id="showName">...</span></p>
-                <p><strong>📞 เบอร์โทร:</strong> <a id="callLink" href="#" class="underline text-yellow-300">กดเพื่อโทรออก</a></p>
-                <p><strong>📝 อาการ:</strong> <span id="showDetail">...</span></p>
-            </div>
-        </div>
-
-        <!-- ✅ เพิ่มส่วนแสดงรูปหน้างาน + แผนที่ (รับค่าจากลิงก์) -->
-        <div class="bg-white p-4 border-b space-y-4">
-            <div>
-                <p class="font-bold text-gray-700 mb-2">📸 รูปหน้างาน</p>
-                <img id="issuePhoto" class="hidden w-full rounded-lg border shadow" alt="รูปหน้างาน">
-                <p id="noIssuePhoto" class="text-sm text-gray-500">ไม่มีรูปแนบในลิงก์</p>
-            </div>
-            <div>
-                <p class="font-bold text-gray-700 mb-2">🗺️ แผนที่</p>
-                <a id="mapLink" class="block w-full text-center bg-blue-50 text-blue-700 font-bold py-2 rounded-lg" target="_blank" rel="noopener">เปิดแผนที่ใน Google Maps</a>
-                <iframe id="mapFrame" class="hidden w-full h-56 mt-2 rounded-lg border" loading="lazy"></iframe>
-                <p id="noLocation" class="hidden text-sm text-gray-500 mt-1">ไม่มีพิกัดแนบในลิงก์</p>
-            </div>
-        </div>
-
-        <form id="techForm" class="p-6 space-y-6">
-            <input type="hidden" name="caseId" id="caseId">
-            <input type="hidden" name="userId" id="userId">
-            <input type="hidden" name="actionType" id="actionType">
-            <input type="hidden" name="lat" id="lat">
-            <input type="hidden" name="long" id="long">
-            <input type="hidden" name="photoUrl" id="photoUrl">
-            <input type="hidden" name="afterPhotoUrl" id="afterPhotoUrl">
-
-            <div class="border-b pb-6">
-                <h3 class="font-bold text-gray-700 mb-2">1. สำหรับช่างรับเรื่อง</h3>
-                <button type="button" onclick="submitForm('accept')" 
-                        class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 rounded-lg shadow transition flex justify-center items-center gap-2">
+<div class="max-w-md mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
+<div class="bg-blue-600 p-6 text-white">
+<h2 class="text-xl font-bold text-center mb-2">🔧 จัดการใบงานซ่อม</h2>
+<div class="bg-blue-500 rounded-lg p-4 text-sm space-y-2">
+<p><strong>🔢 เลขที่ใบงาน:</strong> <span id="showCaseId">...</span></p>
+<p><strong>👤 ผู้แจ้ง:</strong> <span id="showName">...</span></p>
+<p><strong>📞 เบอร์โทร:</strong> <a class="underline text-yellow-300" href="#" id="callLink">กดเพื่อโทรออก</a></p>
+<p><strong>📝 อาการ:</strong> <span id="showDetail">...</span></p>
+</div>
+</div>
+<!-- ✅ เพิ่มส่วนแสดงรูปหน้างาน + แผนที่ (รับค่าจากลิงก์) -->
+<div class="bg-white p-4 border-b space-y-4">
+<div>
+<p class="font-bold text-gray-700 mb-2">📸 รูปหน้างาน</p>
+<img alt="รูปหน้างาน" class="hidden w-full rounded-lg border shadow" crossorigin="anonymous" id="issuePhoto" referrerpolicy="no-referrer"/>
+<p class="text-sm text-gray-500" id="noIssuePhoto">ไม่มีรูปแนบในลิงก์</p><p class="hidden text-sm text-red-600" id="issuePhotoError">โหลดรูปไม่สำเร็จ <a class="underline" href="#" id="issuePhotoOpen" rel="noopener" target="_blank">กดเปิดรูป</a></p>
+</div>
+<div>
+<p class="font-bold text-gray-700 mb-2">🗺️ แผนที่</p>
+<a class="block w-full text-center bg-blue-50 text-blue-700 font-bold py-2 rounded-lg" id="mapLink" rel="noopener" target="_blank">เปิดแผนที่ใน Google Maps</a>
+<iframe class="hidden w-full h-56 mt-2 rounded-lg border" id="mapFrame" loading="lazy"></iframe>
+<p class="hidden text-sm text-gray-500 mt-1" id="noLocation">ไม่มีพิกัดแนบในลิงก์</p>
+</div>
+</div>
+<form class="p-6 space-y-6" id="techForm">
+<input id="caseId" name="caseId" type="hidden"/>
+<input id="userId" name="userId" type="hidden"/>
+<input id="actionType" name="actionType" type="hidden"/>
+<input id="lat" name="lat" type="hidden"/>
+<input id="long" name="long" type="hidden"/>
+<input id="photoUrl" name="photoUrl" type="hidden"/>
+<input id="afterPhotoUrl" name="afterPhotoUrl" type="hidden"/>
+<div class="border-b pb-6">
+<h3 class="font-bold text-gray-700 mb-2">1. สำหรับช่างรับเรื่อง</h3>
+<button class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 rounded-lg shadow transition flex justify-center items-center gap-2" onclick="submitForm('accept')" type="button">
                     🚧 กดเพื่อรับงาน (แจ้งชาวบ้านว่ากำลังไป)
                 </button>
-            </div>
-
-            <div>
-                <h3 class="font-bold text-gray-700 mb-2">2. สำหรับช่างส่งงาน (เสร็จแล้ว)</h3>
-                <label class="block text-sm text-gray-600 mb-1">รูปถ่ายหลังซ่อมเสร็จ *</label>
-                <input type="file" name="image" id="imageInput" accept="image/*" class="w-full mb-3 text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-blue-50 file:text-blue-700">
-                
-                <textarea name="message" id="message" rows="2" class="w-full border rounded-lg p-2 mb-3" placeholder="ข้อความถึงชาวบ้าน (เช่น ซ่อมเสร็จแล้วครับ)"></textarea>
-
-                <button type="button" onclick="submitForm('finish')" 
-                        class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg shadow transition flex justify-center items-center gap-2">
+</div>
+<div>
+<h3 class="font-bold text-gray-700 mb-2">2. สำหรับช่างส่งงาน (เสร็จแล้ว)</h3>
+<label class="block text-sm text-gray-600 mb-1">รูปถ่ายหลังซ่อมเสร็จ *</label>
+<input accept="image/*" class="w-full mb-3 text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-blue-50 file:text-blue-700" id="imageInput" name="image" type="file"/>
+<textarea class="w-full border rounded-lg p-2 mb-3" id="message" name="message" placeholder="ข้อความถึงชาวบ้าน (เช่น ซ่อมเสร็จแล้วครับ)" rows="2"></textarea>
+<button class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg shadow transition flex justify-center items-center gap-2" onclick="submitForm('finish')" type="button">
                     ✅ ยืนยันปิดงาน (ส่งรูปให้ชาวบ้าน)
                 </button>
-            </div>
-        </form>
-    </div>
-
-    <div id="loading" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
-        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500"></div>
-    </div>
-
-    <script>
+</div>
+</form>
+</div>
+<div class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50" id="loading">
+<div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500"></div>
+</div>
+<script>
         // ⚠️ ใส่ Webhook อันใหม่สำหรับช่าง ตรงนี้
         const WEBHOOK_URL = 'https://hook.eu1.make.com/9mgmk9fvut2zuu9ermdqocvkmnh5na9z';
 
@@ -132,12 +122,43 @@
             // ✅ แสดงรูปหน้างาน
             const issuePhoto = document.getElementById('issuePhoto');
             const noIssuePhoto = document.getElementById('noIssuePhoto');
-            if(photo){
-                issuePhoto.src = photo;
-                issuePhoto.classList.remove('hidden');
-                noIssuePhoto.classList.add('hidden');
-            }
+            const issuePhotoError = document.getElementById('issuePhotoError');
+            const issuePhotoOpen = document.getElementById('issuePhotoOpen');
 
+            // รีเซ็ตสถานะ
+            issuePhoto.classList.add('hidden');
+            noIssuePhoto.classList.remove('hidden');
+            if(issuePhotoError) issuePhotoError.classList.add('hidden');
+
+            if(photo){
+                // ถ้ามีรูป ให้พยายามแสดง
+                issuePhoto.onload = function(){
+                    issuePhoto.classList.remove('hidden');
+                    noIssuePhoto.classList.add('hidden');
+                    if(issuePhotoError) issuePhotoError.classList.add('hidden');
+                };
+
+                issuePhoto.onerror = function(){
+                    // ลองผ่าน proxy 1 ครั้ง เผื่อโดนบล็อค hotlink
+                    if(!issuePhoto.dataset.triedProxy){
+                        issuePhoto.dataset.triedProxy = '1';
+                        const clean = photo.replace(/^https?:\/\//,'');
+                        issuePhoto.src = 'https://images.weserv.nl/?url=' + encodeURIComponent(clean);
+                        return;
+                    }
+                    // ถ้ายังไม่ได้ ให้โชว์ลิงก์เปิดรูปแทน
+                    issuePhoto.classList.add('hidden');
+                    noIssuePhoto.classList.add('hidden');
+                    if(issuePhotoError){
+                        issuePhotoError.classList.remove('hidden');
+                        if(issuePhotoOpen) issuePhotoOpen.href = photo;
+                    }
+                };
+
+                // ตั้งค่า src (รอบแรก)
+                issuePhoto.dataset.triedProxy = '';
+                issuePhoto.src = photo;
+            }
             // ✅ แสดงแผนที่
             const mapLink = document.getElementById('mapLink');
             const mapFrame = document.getElementById('mapFrame');
