@@ -22,10 +22,29 @@
             </div>
         </div>
 
+        <!-- ✅ เพิ่มส่วนแสดงรูปหน้างาน + แผนที่ (รับค่าจากลิงก์) -->
+        <div class="bg-white p-4 border-b space-y-4">
+            <div>
+                <p class="font-bold text-gray-700 mb-2">📸 รูปหน้างาน</p>
+                <img id="issuePhoto" class="hidden w-full rounded-lg border shadow" alt="รูปหน้างาน">
+                <p id="noIssuePhoto" class="text-sm text-gray-500">ไม่มีรูปแนบในลิงก์</p>
+            </div>
+            <div>
+                <p class="font-bold text-gray-700 mb-2">🗺️ แผนที่</p>
+                <a id="mapLink" class="block w-full text-center bg-blue-50 text-blue-700 font-bold py-2 rounded-lg" target="_blank" rel="noopener">เปิดแผนที่ใน Google Maps</a>
+                <iframe id="mapFrame" class="hidden w-full h-56 mt-2 rounded-lg border" loading="lazy"></iframe>
+                <p id="noLocation" class="hidden text-sm text-gray-500 mt-1">ไม่มีพิกัดแนบในลิงก์</p>
+            </div>
+        </div>
+
         <form id="techForm" class="p-6 space-y-6">
             <input type="hidden" name="caseId" id="caseId">
             <input type="hidden" name="userId" id="userId">
             <input type="hidden" name="actionType" id="actionType">
+            <input type="hidden" name="lat" id="lat">
+            <input type="hidden" name="long" id="long">
+            <input type="hidden" name="photoUrl" id="photoUrl">
+            <input type="hidden" name="afterPhotoUrl" id="afterPhotoUrl">
 
             <div class="border-b pb-6">
                 <h3 class="font-bold text-gray-700 mb-2">1. สำหรับช่างรับเรื่อง</h3>
@@ -56,7 +75,36 @@
 
     <script>
         // ⚠️ ใส่ Webhook อันใหม่สำหรับช่าง ตรงนี้
-        const WEBHOOK_URL = 'https://hook.eu1.make.com/9mgmk9fvut2zuu9ermdqocvkmnh5na9z'; 
+        const WEBHOOK_URL = 'https://hook.eu1.make.com/9mgmk9fvut2zuu9ermdqocvkmnh5na9z';
+
+        // ✅ ใส่ API Key ของ ImgBB (ห้ามเผยแพร่คีย์นี้)
+        const IMGBB_API_KEY = '90bdd186ac4a75a080d137e88c123b84';
+
+        function fileToBase64(file){
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const base64 = String(reader.result).split(',')[1];
+                    resolve(base64);
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function uploadToImgBB(file){
+            const base64 = await fileToBase64(file);
+            const fd = new FormData();
+            fd.append('image', base64);
+            const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+                method: 'POST',
+                body: fd
+            });
+            const data = await res.json();
+            if(!data || !data.success) throw new Error('ImgBB upload failed');
+            return data.data.url;
+        }
+ 
 
         // ดึงค่าจากลิงค์มาโชว์ตอนเปิดเว็บ
         window.onload = function() {
@@ -73,6 +121,38 @@
             // เก็บค่าใส่กล่องซ่อน เตรียมส่ง
             document.getElementById('caseId').value = params.get('id');
             document.getElementById('userId').value = params.get('userid');
+            // ✅ เก็บพิกัด/รูปหน้างานไว้ในฟอร์ม
+            const lat = params.get('lat') || '';
+            const lng = params.get('long') || '';
+            const photo = params.get('photo') || params.get('photoUrl') || '';
+            document.getElementById('lat').value = lat;
+            document.getElementById('long').value = lng;
+            document.getElementById('photoUrl').value = photo;
+
+            // ✅ แสดงรูปหน้างาน
+            const issuePhoto = document.getElementById('issuePhoto');
+            const noIssuePhoto = document.getElementById('noIssuePhoto');
+            if(photo){
+                issuePhoto.src = photo;
+                issuePhoto.classList.remove('hidden');
+                noIssuePhoto.classList.add('hidden');
+            }
+
+            // ✅ แสดงแผนที่
+            const mapLink = document.getElementById('mapLink');
+            const mapFrame = document.getElementById('mapFrame');
+            const noLocation = document.getElementById('noLocation');
+            if(lat && lng){
+                const mapUrl = `https://www.google.com/maps?q=${lat},${lng}`;
+                mapLink.href = mapUrl;
+                mapFrame.src = `https://maps.google.com/maps?q=${lat},${lng}&z=16&output=embed`;
+                mapFrame.classList.remove('hidden');
+            } else {
+                mapLink.href = '#';
+                mapLink.classList.add('opacity-50','pointer-events-none');
+                noLocation.classList.remove('hidden');
+            }
+
         };
 
         // ฟังก์ชันส่งข้อมูล
@@ -89,6 +169,16 @@
             const formData = new FormData(document.getElementById('techForm'));
 
             try {
+                // ✅ ถ้าปิดงาน ให้อัปโหลดรูปหลังซ่อมไป ImgBB แล้วส่งเป็น URL (ไม่ส่งไฟล์เข้า Make)
+                if(type === 'finish'){
+                    const img = document.getElementById('imageInput');
+                    const afterUrl = await uploadToImgBB(img.files[0]);
+                    document.getElementById('afterPhotoUrl').value = afterUrl;
+
+                    formData.set('afterPhotoUrl', afterUrl);
+                    formData.delete('image');
+                }
+
                 await fetch(WEBHOOK_URL, { method: 'POST', body: formData });
                 Swal.fire('สำเร็จ', 'ระบบได้แจ้งเตือนชาวบ้านเรียบร้อยแล้ว', 'success').then(() => window.close());
             } catch (err) {
