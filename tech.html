@@ -39,7 +39,8 @@
 
                 <div>
                     <label class="block text-gray-700 font-bold mb-2">เบอร์โทรศัพท์ติดต่อ *</label>
-                    <input type="tel" name="phone" id="phone" required 
+                    <input type="tel" name="phone" id="phone" required maxlength="10"
+                           oninput="this.value = this.value.replace(/[^0-9]/g, '')"
                            class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="กรอกเบอร์โทรศัพท์">
                 </div>
 
@@ -57,7 +58,7 @@
                                 <p class="pt-1 text-sm tracking-wider text-gray-400">กดเพื่อถ่ายรูป 📸</p>
                             </div>
                             <input type="file" name="image" id="imageInput" class="hidden" accept="image/*" capture="environment" onchange="previewImage(event)" required />
-                <input type="hidden" name="photoUrl" id="photoUrl">
+                            <input type="hidden" name="photoUrl" id="photoUrl">
                         </label>
                     </div>
                     <img id="preview" class="hidden w-full mt-4 rounded-lg shadow-md border border-gray-200" />
@@ -169,6 +170,10 @@
             // เช็คว่าเลือกประเภทหรือยัง
             const category = document.getElementById('category').value;
             if(!category) { Swal.fire('ลืมเลือกหัวข้อ', 'กรุณาเลือกประเภทการแจ้งซ่อมด้วยครับ', 'warning'); return; }
+
+            // ✅ แก้ไขจุดที่ 2: เพิ่มการตรวจสอบเบอร์โทรศัพท์ ต้องมีอย่างน้อย 9 หลัก
+            const phone = document.getElementById('phone').value;
+            if(phone.length < 9) { Swal.fire('เบอร์โทรไม่ครบ', 'กรุณากรอกเบอร์โทรศัพท์ให้ถูกต้อง (9-10 หลัก)', 'warning'); return; }
 
             const imageInput = document.getElementById('imageInput');
             if(imageInput.files.length === 0){ Swal.fire('ลืมรูป', 'ถ่ายรูปก่อนนะครับ', 'warning'); return; }
