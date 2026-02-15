@@ -65,11 +65,9 @@
                 <p class="pt-1 text-sm tracking-wider text-gray-400">กดเพื่อถ่ายรูป 📸</p>
               </div>
 
-              <!-- ไฟล์รูป (ใช้แค่ preview / อัปโหลดไป ImgBB) -->
               <input type="file" name="image" id="imageInput" class="hidden" accept="image/*" capture="environment"
                 onchange="previewImage(event)" required>
 
-              <!-- ✅ ส่งให้ Make เป็นลิงก์รูป (ไม่ส่งไฟล์) -->
               <input type="hidden" name="photoUrl" id="photoUrl">
             </label>
           </div>
@@ -96,7 +94,6 @@
     <p class="text-center text-gray-500 text-xs mt-4">ระบบแจ้งซ่อมเทศบาล by Nayak Pong</p>
   </div>
 
-  <!-- Loading -->
   <div id="loading" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
     <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500"></div>
   </div>
@@ -105,14 +102,45 @@
     // ✅ Make Webhook
     const WEBHOOK_URL = 'https://hook.eu1.make.com/8uj45pto8ouoba79ndgs8urhwork3ame';
 
-    // ✅ ImgBB API Key (ตามที่คุณให้มา)
+    // ✅ ImgBB API Key
     const IMGBB_API_KEY = '90bdd186ac4a75a080d137e88c123b84';
+
+    // --- ส่วนเริ่มทำงานหลัก (แก้ไขใหม่) ---
+    window.onload = function() {
+      // 1. เริ่มระบบ LIFF ตามปกติ
+      initializeLiff();
+
+      // 2. ระบบดักจับลิ้งค์ เพื่อเลือกหัวข้อให้อัตโนมัติ
+      try {
+        const queryString = window.location.search;
+        const urlParams = new URLSearchParams(queryString);
+        const type = urlParams.get('type'); // อ่านค่าคำว่า type จากลิ้งค์
+
+        const dropdown = document.getElementById('category');
+        
+        // ถ้าลิ้งค์ส่งค่ามา ให้เลือกใน Dropdown ทันที
+        if (type === 'electric') dropdown.value = 'ไฟฟ้าสาธารณะ';
+        else if (type === 'water') dropdown.value = 'ประปา/ท่อระบายน้ำ';
+        else if (type === 'road') dropdown.value = 'ถนน/ทางเท้า';
+        else if (type === 'trash') dropdown.value = 'ขยะ/ความสะอาด';
+        else if (type === 'other') dropdown.value = 'อื่นๆ';
+
+        // (เสริม) ถ้ามีการเลือกแล้ว ให้เปลี่ยนสีพื้นหลังหัวข้อหน่อย user จะได้รู้ว่าเลือกแล้ว
+        if(type) {
+             dropdown.style.backgroundColor = "#e0f2fe"; // สีฟ้าอ่อนๆ
+             dropdown.style.borderColor = "#3b82f6";
+        }
+
+      } catch (e) {
+        console.error("Auto select error:", e);
+      }
+    };
+    // --------------------------------------
 
     function fileToBase64(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => {
-          // reader.result = "data:image/...;base64,XXXX"
           const base64 = String(reader.result).split(',')[1];
           resolve(base64);
         };
@@ -123,37 +151,25 @@
 
     async function uploadToImgBB(file) {
       const base64 = await fileToBase64(file);
-
       const fd = new FormData();
       fd.append('image', base64);
-
       const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
         method: 'POST',
         body: fd
       });
-
       const data = await res.json();
       if (!data || !data.success) {
-        console.error('ImgBB response:', data);
         throw new Error('IMGBB_UPLOAD_FAILED');
       }
-      return data.data.url; // ✅ URL ที่เปิดได้
+      return data.data.url;
     }
 
-    // เริ่มทำงานทันทีที่เปิดเว็บ
-    window.onload = function() {
-      initializeLiff();
-    };
-
-    // เริ่ม LIFF และดึง User ID
     async function initializeLiff() {
       try {
         await liff.init({ liffId: "2009072405-2lzKZtgB" });
-
         if (liff.isLoggedIn()) {
           const profile = await liff.getProfile();
           document.getElementById('userId').value = profile.userId;
-          console.log("User ID:", profile.userId);
         } else {
           liff.login();
         }
@@ -165,7 +181,6 @@
     function previewImage(event) {
       const file = event.target.files[0];
       if (!file) return;
-
       const reader = new FileReader();
       reader.onload = function() {
         const output = document.getElementById('preview');
@@ -214,7 +229,6 @@
         return;
       }
 
-      // (แนะนำ) ให้มีพิกัด จะช่วยให้ช่างเปิดแผนที่ได้
       const lat = document.getElementById('lat').value;
       const lng = document.getElementById('long').value;
       if (!lat || !lng) {
@@ -233,14 +247,12 @@
       document.getElementById('submitBtn').disabled = true;
 
       try {
-        // ✅ 1) อัปโหลดรูปไป ImgBB ก่อน
         const url = await uploadToImgBB(imageInput.files[0]);
         document.getElementById('photoUrl').value = url;
 
-        // ✅ 2) ส่งเข้า Make แบบไม่มีไฟล์ (ส่งเป็น photoUrl)
         const formData = new FormData(this);
         formData.set('photoUrl', url);
-        formData.delete('image'); // ไม่ส่งไฟล์ไป Make
+        formData.delete('image');
 
         const response = await fetch(WEBHOOK_URL, {
           method: 'POST',
