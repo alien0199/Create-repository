@@ -15,7 +15,42 @@
 
   <style>
     body { font-family: 'Kanit', sans-serif; }
-    #map { height: 300px; width: 100%; border-radius: 0.75rem; z-index: 1; margin-top: 10px; }
+    
+    /* กล่องแผนที่ปกติ */
+    #map-wrapper {
+      position: relative;
+      width: 100%;
+      height: 250px;
+      border-radius: 0.75rem;
+      overflow: hidden;
+      border: 2px solid #e5e7eb;
+    }
+
+    #map { width: 100%; height: 100%; z-index: 1; }
+
+    /* โหมดเต็มจอ (Fullscreen) */
+    .map-fullscreen {
+      position: fixed !important;
+      top: 0; left: 0; right: 0; bottom: 0;
+      width: 100vw !important;
+      height: 100vh !important;
+      z-index: 9999 !important;
+      border-radius: 0 !important;
+      border: none !important;
+    }
+
+    /* ปุ่มควบคุมในแผนที่ */
+    .map-controls {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10000;
+      display: flex;
+      gap: 10px;
+      width: 90%;
+      justify-content: center;
+    }
   </style>
 </head>
 
@@ -31,8 +66,8 @@
           <label class="block text-gray-700 font-bold mb-2">📢 แจ้งเรื่องเกี่ยวกับอะไร? *</label>
           <select name="category" id="category" required
             class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-lg">
-            <option value="" disabled selected>-- กรุณาจิ้มเพื่อเลือกหัวข้อ --</option>
-            <option value="ไฟฟ้าสาธารณะ">💡 ไฟฟ้าสาธารณะ (ไฟดับ/กิ่งไม้พาด)</option>
+            <option value="" disabled selected>-- เลือกหัวข้อ --</option>
+            <option value="ไฟฟ้าสาธารณะ">💡 ไฟฟ้าสาธารณะ (ไฟดับ/กิ่งไม้)</option>
             <option value="ประปา/ท่อระบายน้ำ">🚰 ประปา / ท่อระบายน้ำ</option>
             <option value="ถนน/ทางเท้า">🛣️ ถนน / ทางเท้าชำรุด</option>
             <option value="ขยะ/ความสะอาด">🗑️ ขยะ / ความสะอาด</option>
@@ -48,181 +83,199 @@
         </div>
 
         <div>
-          <label class="block text-gray-700 font-bold mb-2">เบอร์โทรศัพท์ติดต่อ *</label>
+          <label class="block text-gray-700 font-bold mb-2">เบอร์โทรศัพท์ *</label>
           <input type="tel" name="phone" id="phone" required maxlength="10"
             oninput="this.value = this.value.replace(/[^0-9]/g, '')"
             class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="กรอกเบอร์โทรศัพท์">
+            placeholder="เบอร์โทรศัพท์">
         </div>
 
         <div>
-          <label class="block text-gray-700 font-bold mb-2">รายละเอียดอาการ *</label>
-          <textarea name="detail" id="detail" rows="3" required
+          <label class="block text-gray-700 font-bold mb-2">📍 จุดเกิดเหตุ (ต้องระบุ) *</label>
+          
+          <div id="map-wrapper">
+            <div id="map"></div>
+            
+            <button type="button" id="btnExpand" onclick="toggleMapSize()" 
+              class="absolute top-2 right-2 z-[500] bg-white text-blue-600 px-3 py-1 rounded shadow text-sm font-bold border border-blue-100 flex items-center gap-1">
+              🔍 ขยายเต็มจอ
+            </button>
+
+            <div id="fullscreenControls" class="map-controls hidden">
+               <button type="button" onclick="getCurrentLocation()" class="bg-white text-gray-700 px-4 py-3 rounded-full shadow-lg font-bold flex-1">
+                 🎯 หาฉัน
+               </button>
+               <button type="button" onclick="toggleMapSize()" class="bg-blue-600 text-white px-6 py-3 rounded-full shadow-lg font-bold flex-[2]">
+                 ✅ ยืนยันจุดนี้
+               </button>
+            </div>
+          </div>
+
+          <p id="locationText" class="text-xs text-gray-500 mt-2 text-center">พิกัด: <span id="latDisplay">-</span>, <span id="lngDisplay">-</span></p>
+          <input type="hidden" name="lat" id="lat">
+          <input type="hidden" name="long" id="long">
+        </div>
+
+        <div>
+          <label class="block text-gray-700 font-bold mb-2">รายละเอียด *</label>
+          <textarea name="detail" id="detail" rows="2" required
             class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="ระบุอาการ และ จุดสังเกต"></textarea>
+            placeholder="บอกจุดสังเกตเพิ่มเติม"></textarea>
         </div>
 
         <div>
-          <label class="block text-gray-700 font-bold mb-2">รูปถ่ายหน้างาน *</label>
+          <label class="block text-gray-700 font-bold mb-2">รูปถ่าย *</label>
           <div class="flex items-center justify-center w-full">
-            <label class="flex flex-col w-full h-32 border-4 border-blue-200 border-dashed hover:bg-gray-100 hover:border-gray-300 rounded-lg cursor-pointer">
-              <div class="flex flex-col items-center justify-center pt-7">
-                <p class="pt-1 text-sm tracking-wider text-gray-400">กดเพื่อถ่ายรูป 📸</p>
+            <label class="flex flex-col w-full h-24 border-4 border-blue-200 border-dashed hover:bg-gray-100 rounded-lg cursor-pointer bg-blue-50">
+              <div class="flex flex-col items-center justify-center pt-5">
+                <p class="text-sm text-gray-500">📸 กดเพื่อถ่ายรูป</p>
               </div>
               <input type="file" name="image" id="imageInput" class="hidden" accept="image/*" capture="environment"
                 onchange="previewImage(event)" required>
               <input type="hidden" name="photoUrl" id="photoUrl">
             </label>
           </div>
-          <img id="preview" class="hidden w-full mt-4 rounded-lg shadow-md border border-gray-200" />
-        </div>
-
-        <div>
-          <label class="block text-gray-700 font-bold mb-2">📍 ระบุจุดเกิดเหตุ (ลากหมุดได้) *</label>
-          
-          <div id="map"></div>
-          
-          <div class="flex justify-between items-center mt-2">
-             <span id="locationStatus" class="text-xs text-gray-500">รอระบุพิกัด...</span>
-             <button type="button" onclick="getCurrentLocation()" class="text-xs bg-blue-100 text-blue-600 px-3 py-1 rounded-full">
-               🎯 หาตำแหน่งฉัน
-             </button>
-          </div>
-
-          <input type="hidden" name="lat" id="lat">
-          <input type="hidden" name="long" id="long">
+          <img id="preview" class="hidden w-full h-48 object-cover mt-2 rounded-lg shadow-md" />
         </div>
 
         <button type="submit" id="submitBtn"
-          class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg mt-6 transform transition hover:scale-105">
-          🚀 ส่งเรื่องแจ้งซ่อม
+          class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg mt-4 text-lg">
+          🚀 ส่งแจ้งซ่อม
         </button>
       </form>
     </div>
-    <p class="text-center text-gray-500 text-xs mt-4">ระบบแจ้งซ่อมเทศบาล by Alieninburi</p>
+    <p class="text-center text-gray-500 text-xs mt-6 mb-10">ระบบแจ้งซ่อมเทศบาล by Alieninburi</p>
   </div>
 
-  <div id="loading" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
+  <div id="loading" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-[10000]">
     <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500"></div>
   </div>
 
   <script>
-    // --- ตั้งค่าระบบ (ค่าเดิมของคุณ) ---
     const WEBHOOK_URL = 'https://hook.eu1.make.com/8uj45pto8ouoba79ndgs8urhwork3ame';
-    const IMGBB_API_KEY = '90bdd186ac4a75a080d137e88c123b84'; // ใช้ Key เดิม
+    const IMGBB_API_KEY = '90bdd186ac4a75a080d137e88c123b84';
     
-    // ตั้งค่าแผนที่เริ่มต้น (อินบุรี)
+    let map, marker;
     const defaultLat = 14.996; 
     const defaultLng = 100.327;
-    let map, marker;
+    let isFullscreen = false;
 
     window.onload = function() {
-      initializeLiff();    // เรียก LIFF เหมือนเดิม
-      autoSelectCategory();// เรียกตัวเลือกหมวดหมู่เหมือนเดิม
-      initMap();           // *เพิ่ม* โหลดแผนที่
+      initializeLiff();
+      initMap();
+      autoSelectCategory();
     };
 
-    // --- ฟังก์ชันแผนที่ (ส่วนเสริม ไม่ทับของเดิม) ---
+    // --- ส่วนจัดการแผนที่แบบ Mobile ---
     function initMap() {
-      map = L.map('map').setView([defaultLat, defaultLng], 13);
+      // สร้างแผนที่
+      map = L.map('map', {
+        zoomControl: false // ซ่อนปุ่ม Zoom เดิมเพื่อประหยัดที่บนมือถือ
+      }).setView([defaultLat, defaultLng], 13);
+
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: 'Map data &copy; OpenStreetMap'
+        attribution: '&copy; OSM'
       }).addTo(map);
 
-      // สร้างหมุดที่ลากได้
-      marker = L.marker([defaultLat, defaultLng], {draggable: true}).addTo(map);
-
-      // เมื่อลากหมุด ให้เอาค่าไปใส่ใน input lat/long (แทนการพิมพ์เอง)
-      marker.on('dragend', function(e) {
-        updateInput(marker.getLatLng().lat, marker.getLatLng().lng);
+      // สร้างไอคอนหมุดให้ใหญ่ขึ้นหน่อยสำหรับมือถือ
+      const bigIcon = L.icon({
+        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+        iconSize: [30, 50], // ใหญ่ขึ้น
+        iconAnchor: [15, 50],
+        popupAnchor: [1, -34],
+        shadowSize: [41, 41]
       });
 
-      // เมื่อคลิกแผนที่ ให้ย้ายหมุดไปตรงนั้น
+      marker = L.marker([defaultLat, defaultLng], {draggable: true, icon: bigIcon}).addTo(map);
+
+      // Event: ลากหมุดจบ
+      marker.on('dragend', function(e) {
+        updateInput(marker.getLatLng());
+      });
+
+      // Event: จิ้มแผนที่เพื่อย้ายหมุด
       map.on('click', function(e) {
         marker.setLatLng(e.latlng);
-        updateInput(e.latlng.lat, e.latlng.lng);
+        updateInput(e.latlng);
       });
 
-      // ลองดึง GPS เครื่อง
+      // ดึงพิกัดครั้งแรก
       getCurrentLocation();
     }
 
-    function getCurrentLocation() {
-      const status = document.getElementById('locationStatus');
-      status.innerText = "⏳ กำลังดึง GPS...";
+    // ฟังก์ชันสลับโหมดเต็มจอ
+    function toggleMapSize() {
+      const wrapper = document.getElementById('map-wrapper');
+      const btnExpand = document.getElementById('btnExpand');
+      const controls = document.getElementById('fullscreenControls');
       
+      isFullscreen = !isFullscreen;
+
+      if (isFullscreen) {
+        wrapper.classList.add('map-fullscreen'); // ใส่ class เต็มจอ
+        btnExpand.classList.add('hidden');       // ซ่อนปุ่มขยาย
+        controls.classList.remove('hidden');     // โชว์ปุ่มยืนยัน
+        document.body.style.overflow = 'hidden'; // ห้ามเลื่อนหน้าเว็บข้างหลัง
+      } else {
+        wrapper.classList.remove('map-fullscreen'); // เอา class เต็มจอออก
+        btnExpand.classList.remove('hidden');       // โชว์ปุ่มขยาย
+        controls.classList.add('hidden');           // ซ่อนปุ่มยืนยัน
+        document.body.style.overflow = 'auto';      // เลื่อนหน้าเว็บได้ปกติ
+      }
+
+      // **สำคัญมาก** ต้องบอก Leaflet ว่าขนาดกล่องเปลี่ยนไปแล้ว ให้วาดใหม่
+      setTimeout(() => {
+        map.invalidateSize();
+        // ถ้าขยาย ให้ซูมไปที่หมุด
+        if(isFullscreen) map.setView(marker.getLatLng(), map.getZoom());
+      }, 300);
+    }
+
+    function getCurrentLocation() {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition((position) => {
           const lat = position.coords.latitude;
           const lng = position.coords.longitude;
+          const latlng = { lat: lat, lng: lng };
           
-          // ย้ายแผนที่และหมุดไปจุดนั้น
-          map.setView([lat, lng], 18);
-          marker.setLatLng([lat, lng]);
-          
-          updateInput(lat, lng); // อัปเดตค่าเข้า Input
-          status.innerText = "✅ เจอตำแหน่งแล้ว (ลากหมุดเพื่อปรับได้)";
-          status.className = "text-xs text-green-600 font-bold";
+          map.setView(latlng, 17);
+          marker.setLatLng(latlng);
+          updateInput(latlng);
         }, (err) => {
-          status.innerText = "❌ ไม่เจอ GPS (กรุณาลากหมุดเอง)";
-          status.className = "text-xs text-red-500";
+          console.log("GPS Error");
         }, {enableHighAccuracy: true});
-      } else {
-        status.innerText = "❌ เครื่องไม่รองรับ GPS";
       }
     }
 
-    // ฟังก์ชันช่วยเอาค่าใส่ Input (สะพานเชื่อมแผนที่ -> ระบบเดิม)
-    function updateInput(lat, lng) {
-      document.getElementById('lat').value = lat.toFixed(6);
-      document.getElementById('long').value = lng.toFixed(6);
+    function updateInput(latlng) {
+      const lat = latlng.lat.toFixed(6);
+      const lng = latlng.lng.toFixed(6);
+      document.getElementById('lat').value = lat;
+      document.getElementById('long').value = lng;
+      document.getElementById('latDisplay').innerText = lat;
+      document.getElementById('lngDisplay').innerText = lng;
     }
 
-    // --- ฟังก์ชันระบบเดิม (รักษาไว้) ---
-    function fileToBase64(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result).split(',')[1]);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-    }
-
-    async function uploadToImgBB(file) {
-      const base64 = await fileToBase64(file);
-      const fd = new FormData();
-      fd.append('image', base64);
-      const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: fd });
-      const data = await res.json();
-      if (!data || !data.success) throw new Error('ImgBB Upload Failed');
-      return data.data.url;
-    }
-
+    // --- ส่วนจัดการอื่นๆ (เหมือนเดิม) ---
     async function initializeLiff() {
       try {
         await liff.init({ liffId: "2009072405-2lzKZtgB" });
         if (liff.isLoggedIn()) {
           const profile = await liff.getProfile();
           document.getElementById('userId').value = profile.userId;
-        } else {
-          liff.login();
-        }
-      } catch (err) { console.error("LIFF Error", err); }
+        } else { liff.login(); }
+      } catch (err) { console.error(err); }
     }
 
     function autoSelectCategory() {
-      try {
-        const urlParams = new URLSearchParams(window.location.search);
-        const type = urlParams.get('type');
+      const urlParams = new URLSearchParams(window.location.search);
+      const type = urlParams.get('type');
+      if(type) {
         const dropdown = document.getElementById('category');
-        if (type === 'electric') dropdown.value = 'ไฟฟ้าสาธารณะ';
-        else if (type === 'water') dropdown.value = 'ประปา/ท่อระบายน้ำ';
-        else if (type === 'road') dropdown.value = 'ถนน/ทางเท้า';
-        else if (type === 'trash') dropdown.value = 'ขยะ/ความสะอาด';
-        else if (type === 'other') dropdown.value = 'อื่นๆ';
-        
-        if(type) dropdown.style.backgroundColor = "#e0f2fe";
-      } catch (e) { console.error(e); }
+        const mapType = {'electric':'ไฟฟ้าสาธารณะ','water':'ประปา/ท่อระบายน้ำ','road':'ถนน/ทางเท้า','trash':'ขยะ/ความสะอาด','other':'อื่นๆ'};
+        if(mapType[type]) dropdown.value = mapType[type];
+      }
     }
 
     function previewImage(event) {
@@ -238,49 +291,41 @@
         }
     }
 
-    // --- ส่วนส่งข้อมูล (Submit Logic เดิม) ---
     document.getElementById('repairForm').addEventListener('submit', async function (e) {
       e.preventDefault();
-
+      
       const lat = document.getElementById('lat').value;
-      const lng = document.getElementById('long').value;
-      const category = document.getElementById('category').value;
-      const phone = document.getElementById('phone').value;
-
-      // Validation
-      if (!category) { Swal.fire('ลืมเลือกหัวข้อ', 'กรุณาเลือกประเภทการแจ้งซ่อม', 'warning'); return; }
-      if (!lat || !lng) { Swal.fire('ไม่พบพิกัด', 'กรุณากดค้นหาตำแหน่ง หรือจิ้มบนแผนที่', 'warning'); return; }
-      if (phone.length < 9) { Swal.fire('เบอร์โทรผิด', 'กรุณากรอกเบอร์โทรศัพท์ให้ครบ', 'warning'); return; }
+      if (!lat) { Swal.fire('ลืมระบุพิกัด', 'กรุณากดค้นหาตำแหน่ง หรือจิ้มบนแผนที่', 'warning'); return; }
 
       document.getElementById('loading').classList.remove('hidden');
       document.getElementById('submitBtn').disabled = true;
 
       try {
-        const imageInput = document.getElementById('imageInput');
-        // อัปโหลดรูป (เหมือนเดิม)
-        const url = await uploadToImgBB(imageInput.files[0]);
-        document.getElementById('photoUrl').value = url;
+        // Upload Image
+        const imageFile = document.getElementById('imageInput').files[0];
+        const reader = new FileReader();
+        reader.readAsDataURL(imageFile);
+        reader.onloadend = async () => {
+          const base64 = String(reader.result).split(',')[1];
+          const fd = new FormData();
+          fd.append('image', base64);
+          
+          const imgRes = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: fd });
+          const imgData = await imgRes.json();
+          const photoUrl = imgData.data.url;
 
-        // เตรียมข้อมูลส่ง Webhook (โครงสร้างเดิม)
-        const formData = new FormData(this);
-        formData.set('photoUrl', url);
-        formData.delete('image'); // ลบไฟล์ binary ออก ส่งแค่ link
+          // Submit Form
+          const formData = new FormData(document.getElementById('repairForm'));
+          formData.set('photoUrl', photoUrl);
+          formData.delete('image');
 
-        // ส่งไป Make
-        const response = await fetch(WEBHOOK_URL, { method: 'POST', body: formData });
-
-        if (response.ok) {
-          Swal.fire('สำเร็จ!', 'รับแจ้งเรียบร้อย', 'success').then(() => {
-            if (window.liff && liff.isInClient()) liff.closeWindow();
-            else window.location.reload();
-          });
-        } else {
-          throw new Error('Webhook Error');
+          const res = await fetch(WEBHOOK_URL, { method: 'POST', body: formData });
+          if (res.ok) {
+            Swal.fire('สำเร็จ', 'ส่งเรื่องเรียบร้อย', 'success').then(() => liff.closeWindow());
+          } else { throw new Error('Webhook Error'); }
         }
       } catch (error) {
-        console.error(error);
-        Swal.fire('เกิดข้อผิดพลาด', 'ส่งข้อมูลไม่สำเร็จ กรุณาลองใหม่', 'error');
-      } finally {
+        Swal.fire('เกิดข้อผิดพลาด', 'ส่งข้อมูลไม่สำเร็จ', 'error');
         document.getElementById('loading').classList.add('hidden');
         document.getElementById('submitBtn').disabled = false;
       }
