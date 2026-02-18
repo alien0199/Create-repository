@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>แจ้งซ่อมเทศบาล</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
@@ -10,8 +10,12 @@
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
   <style>
     body { font-family: 'Kanit', sans-serif; }
+    #map { height: 300px; width: 100%; border-radius: 0.75rem; z-index: 1; margin-top: 10px; }
   </style>
 </head>
 
@@ -45,7 +49,8 @@
 
         <div>
           <label class="block text-gray-700 font-bold mb-2">เบอร์โทรศัพท์ติดต่อ *</label>
-          <input type="tel" name="phone" id="phone" required
+          <input type="tel" name="phone" id="phone" required maxlength="10"
+            oninput="this.value = this.value.replace(/[^0-9]/g, '')"
             class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="กรอกเบอร์โทรศัพท์">
         </div>
@@ -64,10 +69,8 @@
               <div class="flex flex-col items-center justify-center pt-7">
                 <p class="pt-1 text-sm tracking-wider text-gray-400">กดเพื่อถ่ายรูป 📸</p>
               </div>
-
               <input type="file" name="image" id="imageInput" class="hidden" accept="image/*" capture="environment"
                 onchange="previewImage(event)" required>
-
               <input type="hidden" name="photoUrl" id="photoUrl">
             </label>
           </div>
@@ -75,11 +78,17 @@
         </div>
 
         <div>
-          <button type="button" onclick="getLocation()"
-            class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg flex justify-center items-center gap-2">
-            📍 ระบุตำแหน่ง GPS
-          </button>
-          <p id="locationStatus" class="text-sm text-gray-500 mt-2 text-center"></p>
+          <label class="block text-gray-700 font-bold mb-2">📍 ระบุจุดเกิดเหตุ (ลากหมุดได้) *</label>
+          
+          <div id="map"></div>
+          
+          <div class="flex justify-between items-center mt-2">
+             <span id="locationStatus" class="text-xs text-gray-500">รอระบุพิกัด...</span>
+             <button type="button" onclick="getCurrentLocation()" class="text-xs bg-blue-100 text-blue-600 px-3 py-1 rounded-full">
+               🎯 หาตำแหน่งฉัน
+             </button>
+          </div>
+
           <input type="hidden" name="lat" id="lat">
           <input type="hidden" name="long" id="long">
         </div>
@@ -90,8 +99,7 @@
         </button>
       </form>
     </div>
-
-    <p class="text-center text-gray-500 text-xs mt-4">ระบบแจ้งซ่อมเทศบาล by Alieninburi </p>
+    <p class="text-center text-gray-500 text-xs mt-4">ระบบแจ้งซ่อมเทศบาล by Alieninburi</p>
   </div>
 
   <div id="loading" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
@@ -99,51 +107,82 @@
   </div>
 
   <script>
-    // ✅ Make Webhook
+    // --- ตั้งค่าระบบ (ค่าเดิมของคุณ) ---
     const WEBHOOK_URL = 'https://hook.eu1.make.com/8uj45pto8ouoba79ndgs8urhwork3ame';
+    const IMGBB_API_KEY = '90bdd186ac4a75a080d137e88c123b84'; // ใช้ Key เดิม
+    
+    // ตั้งค่าแผนที่เริ่มต้น (อินบุรี)
+    const defaultLat = 14.996; 
+    const defaultLng = 100.327;
+    let map, marker;
 
-    // ✅ ImgBB API Key
-    const IMGBB_API_KEY = '90bdd186ac4a75a080d137e88c123b84';
-
-    // --- ส่วนเริ่มทำงานหลัก (แก้ไขใหม่) ---
     window.onload = function() {
-      // 1. เริ่มระบบ LIFF ตามปกติ
-      initializeLiff();
-
-      // 2. ระบบดักจับลิ้งค์ เพื่อเลือกหัวข้อให้อัตโนมัติ
-      try {
-        const queryString = window.location.search;
-        const urlParams = new URLSearchParams(queryString);
-        const type = urlParams.get('type'); // อ่านค่าคำว่า type จากลิ้งค์
-
-        const dropdown = document.getElementById('category');
-        
-        // ถ้าลิ้งค์ส่งค่ามา ให้เลือกใน Dropdown ทันที
-        if (type === 'electric') dropdown.value = 'ไฟฟ้าสาธารณะ';
-        else if (type === 'water') dropdown.value = 'ประปา/ท่อระบายน้ำ';
-        else if (type === 'road') dropdown.value = 'ถนน/ทางเท้า';
-        else if (type === 'trash') dropdown.value = 'ขยะ/ความสะอาด';
-        else if (type === 'other') dropdown.value = 'อื่นๆ';
-
-        // (เสริม) ถ้ามีการเลือกแล้ว ให้เปลี่ยนสีพื้นหลังหัวข้อหน่อย user จะได้รู้ว่าเลือกแล้ว
-        if(type) {
-             dropdown.style.backgroundColor = "#e0f2fe"; // สีฟ้าอ่อนๆ
-             dropdown.style.borderColor = "#3b82f6";
-        }
-
-      } catch (e) {
-        console.error("Auto select error:", e);
-      }
+      initializeLiff();    // เรียก LIFF เหมือนเดิม
+      autoSelectCategory();// เรียกตัวเลือกหมวดหมู่เหมือนเดิม
+      initMap();           // *เพิ่ม* โหลดแผนที่
     };
-    // --------------------------------------
 
+    // --- ฟังก์ชันแผนที่ (ส่วนเสริม ไม่ทับของเดิม) ---
+    function initMap() {
+      map = L.map('map').setView([defaultLat, defaultLng], 13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: 'Map data &copy; OpenStreetMap'
+      }).addTo(map);
+
+      // สร้างหมุดที่ลากได้
+      marker = L.marker([defaultLat, defaultLng], {draggable: true}).addTo(map);
+
+      // เมื่อลากหมุด ให้เอาค่าไปใส่ใน input lat/long (แทนการพิมพ์เอง)
+      marker.on('dragend', function(e) {
+        updateInput(marker.getLatLng().lat, marker.getLatLng().lng);
+      });
+
+      // เมื่อคลิกแผนที่ ให้ย้ายหมุดไปตรงนั้น
+      map.on('click', function(e) {
+        marker.setLatLng(e.latlng);
+        updateInput(e.latlng.lat, e.latlng.lng);
+      });
+
+      // ลองดึง GPS เครื่อง
+      getCurrentLocation();
+    }
+
+    function getCurrentLocation() {
+      const status = document.getElementById('locationStatus');
+      status.innerText = "⏳ กำลังดึง GPS...";
+      
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition((position) => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+          
+          // ย้ายแผนที่และหมุดไปจุดนั้น
+          map.setView([lat, lng], 18);
+          marker.setLatLng([lat, lng]);
+          
+          updateInput(lat, lng); // อัปเดตค่าเข้า Input
+          status.innerText = "✅ เจอตำแหน่งแล้ว (ลากหมุดเพื่อปรับได้)";
+          status.className = "text-xs text-green-600 font-bold";
+        }, (err) => {
+          status.innerText = "❌ ไม่เจอ GPS (กรุณาลากหมุดเอง)";
+          status.className = "text-xs text-red-500";
+        }, {enableHighAccuracy: true});
+      } else {
+        status.innerText = "❌ เครื่องไม่รองรับ GPS";
+      }
+    }
+
+    // ฟังก์ชันช่วยเอาค่าใส่ Input (สะพานเชื่อมแผนที่ -> ระบบเดิม)
+    function updateInput(lat, lng) {
+      document.getElementById('lat').value = lat.toFixed(6);
+      document.getElementById('long').value = lng.toFixed(6);
+    }
+
+    // --- ฟังก์ชันระบบเดิม (รักษาไว้) ---
     function fileToBase64(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
-        reader.onload = () => {
-          const base64 = String(reader.result).split(',')[1];
-          resolve(base64);
-        };
+        reader.onload = () => resolve(String(reader.result).split(',')[1]);
         reader.onerror = reject;
         reader.readAsDataURL(file);
       });
@@ -153,14 +192,9 @@
       const base64 = await fileToBase64(file);
       const fd = new FormData();
       fd.append('image', base64);
-      const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
-        method: 'POST',
-        body: fd
-      });
+      const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: fd });
       const data = await res.json();
-      if (!data || !data.success) {
-        throw new Error('IMGBB_UPLOAD_FAILED');
-      }
+      if (!data || !data.success) throw new Error('ImgBB Upload Failed');
       return data.data.url;
     }
 
@@ -173,91 +207,67 @@
         } else {
           liff.login();
         }
-      } catch (err) {
-        console.error("LIFF Error:", err);
-      }
+      } catch (err) { console.error("LIFF Error", err); }
+    }
+
+    function autoSelectCategory() {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const type = urlParams.get('type');
+        const dropdown = document.getElementById('category');
+        if (type === 'electric') dropdown.value = 'ไฟฟ้าสาธารณะ';
+        else if (type === 'water') dropdown.value = 'ประปา/ท่อระบายน้ำ';
+        else if (type === 'road') dropdown.value = 'ถนน/ทางเท้า';
+        else if (type === 'trash') dropdown.value = 'ขยะ/ความสะอาด';
+        else if (type === 'other') dropdown.value = 'อื่นๆ';
+        
+        if(type) dropdown.style.backgroundColor = "#e0f2fe";
+      } catch (e) { console.error(e); }
     }
 
     function previewImage(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function() {
-        const output = document.getElementById('preview');
-        output.src = reader.result;
-        output.classList.remove('hidden');
-      };
-      reader.readAsDataURL(file);
+        const file = event.target.files[0];
+        if(file){
+            const reader = new FileReader();
+            reader.onload = function(e){
+                const output = document.getElementById('preview');
+                output.src = e.target.result;
+                output.classList.remove('hidden');
+            }
+            reader.readAsDataURL(file);
+        }
     }
 
-    function getLocation() {
-      const status = document.getElementById('locationStatus');
-      if (navigator.geolocation) {
-        status.innerHTML = "⏳ กำลังค้นหาตำแหน่ง...";
-        navigator.geolocation.getCurrentPosition(showPosition, showError);
-      } else {
-        status.innerHTML = "❌ ไม่รองรับ GPS";
-      }
-    }
-
-    function showPosition(position) {
-      document.getElementById('lat').value = position.coords.latitude;
-      document.getElementById('long').value = position.coords.longitude;
-      const status = document.getElementById('locationStatus');
-      status.innerHTML = "✅ เรียบร้อย";
-      status.className = "text-sm text-green-600 mt-2 text-center font-bold";
-    }
-
-    function showError(error) {
-      const status = document.getElementById('locationStatus');
-      status.innerHTML = "❌ ไม่เจอพิกัด (กรุณาเปิด GPS)";
-      status.className = "text-sm text-red-600 mt-2 text-center font-bold";
-    }
-
+    // --- ส่วนส่งข้อมูล (Submit Logic เดิม) ---
     document.getElementById('repairForm').addEventListener('submit', async function (e) {
       e.preventDefault();
 
-      const category = document.getElementById('category').value;
-      if (!category) {
-        Swal.fire('ลืมเลือกหัวข้อ', 'กรุณาเลือกประเภทการแจ้งซ่อมด้วยครับ', 'warning');
-        return;
-      }
-
-      const imageInput = document.getElementById('imageInput');
-      if (imageInput.files.length === 0) {
-        Swal.fire('ลืมรูป', 'ถ่ายรูปก่อนนะครับ', 'warning');
-        return;
-      }
-
       const lat = document.getElementById('lat').value;
       const lng = document.getElementById('long').value;
-      if (!lat || !lng) {
-        const r = await Swal.fire({
-          title: 'ยังไม่ได้กดระบุตำแหน่ง',
-          text: 'อยากส่งต่อเลยไหม? (ช่างจะไม่มีแผนที่)',
-          icon: 'question',
-          showCancelButton: true,
-          confirmButtonText: 'ส่งเลย',
-          cancelButtonText: 'ย้อนกลับ'
-        });
-        if (!r.isConfirmed) return;
-      }
+      const category = document.getElementById('category').value;
+      const phone = document.getElementById('phone').value;
+
+      // Validation
+      if (!category) { Swal.fire('ลืมเลือกหัวข้อ', 'กรุณาเลือกประเภทการแจ้งซ่อม', 'warning'); return; }
+      if (!lat || !lng) { Swal.fire('ไม่พบพิกัด', 'กรุณากดค้นหาตำแหน่ง หรือจิ้มบนแผนที่', 'warning'); return; }
+      if (phone.length < 9) { Swal.fire('เบอร์โทรผิด', 'กรุณากรอกเบอร์โทรศัพท์ให้ครบ', 'warning'); return; }
 
       document.getElementById('loading').classList.remove('hidden');
       document.getElementById('submitBtn').disabled = true;
 
       try {
+        const imageInput = document.getElementById('imageInput');
+        // อัปโหลดรูป (เหมือนเดิม)
         const url = await uploadToImgBB(imageInput.files[0]);
         document.getElementById('photoUrl').value = url;
 
+        // เตรียมข้อมูลส่ง Webhook (โครงสร้างเดิม)
         const formData = new FormData(this);
         formData.set('photoUrl', url);
-        formData.delete('image');
+        formData.delete('image'); // ลบไฟล์ binary ออก ส่งแค่ link
 
-        const response = await fetch(WEBHOOK_URL, {
-          method: 'POST',
-          body: formData
-        });
+        // ส่งไป Make
+        const response = await fetch(WEBHOOK_URL, { method: 'POST', body: formData });
 
         if (response.ok) {
           Swal.fire('สำเร็จ!', 'รับแจ้งเรียบร้อย', 'success').then(() => {
@@ -265,11 +275,11 @@
             else window.location.reload();
           });
         } else {
-          throw new Error('WEBHOOK_ERROR');
+          throw new Error('Webhook Error');
         }
       } catch (error) {
         console.error(error);
-        Swal.fire('ผิดพลาด', 'อัปโหลดรูป/ส่งข้อมูลไม่สำเร็จ ลองใหม่อีกครั้ง', 'error');
+        Swal.fire('เกิดข้อผิดพลาด', 'ส่งข้อมูลไม่สำเร็จ กรุณาลองใหม่', 'error');
       } finally {
         document.getElementById('loading').classList.add('hidden');
         document.getElementById('submitBtn').disabled = false;
@@ -278,4 +288,3 @@
   </script>
 </body>
 </html>
-
