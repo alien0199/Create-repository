@@ -64,12 +64,17 @@
         </form>
     </div>
 
-    <div class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50" id="loading">
-        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500"></div>
+    <div class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex flex-col items-center justify-center z-50 text-white font-bold" id="loading">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-white mb-4"></div>
+        <p id="loadingText">กำลังโหลดข้อมูล...</p>
     </div>
 
     <script>
-        const WEBHOOK_URL = 'https://hook.eu1.make.com/9mgmk9fvut2zuu9ermdqocvkmnh5na9z';
+        // ✅ 1. ลิงก์เช็คสถานะจาก Google Script (ลิงก์ของคุณ)
+        const CHECK_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxeDZPVdikGu9jbRGRgH5wckotJy4OHndOkFyQ0VyDdJDCzVsPcT_-UC9VaE87-S-Xc/exec';
+        
+        // ✅ 2. ลิงก์สำหรับส่งข้อมูลเข้า Make (ของคุณ)
+        const SUBMIT_WEBHOOK_URL = 'https://hook.eu1.make.com/9mgmk9fvut2zuu9ermdqocvkmnh5na9z';
         const IMGBB_API_KEY = '90bdd186ac4a75a080d137e88c123b84';
 
         function fileToBase64(file){
@@ -97,12 +102,13 @@
             return data.data.url;
         }
 
-        window.onload = function() {
+        window.onload = async function() {
             const params = new URLSearchParams(window.location.search);
             const cleanParam = (v) => (v || '').toString().trim().replace(/^[\s(]+|[\s)]+$/g,'');
             const getParam = (k) => cleanParam(params.get(k));
 
-            document.getElementById('showCaseId').innerText = getParam('id') || '-';
+            const currentCaseId = getParam('id');
+            document.getElementById('showCaseId').innerText = currentCaseId || '-';
             document.getElementById('showName').innerText = getParam('name') || '-';
             document.getElementById('showDetail').innerText = getParam('detail') || '-';
             
@@ -110,7 +116,7 @@
             document.getElementById('callLink').innerText = phone;
             document.getElementById('callLink').href = 'tel:' + phone;
 
-            document.getElementById('caseId').value = getParam('id');
+            document.getElementById('caseId').value = currentCaseId;
             document.getElementById('userId').value = (getParam('userid') || getParam('userId') || getParam('userID'));
             
             const lat = getParam('lat') || '';
@@ -123,6 +129,7 @@
             document.getElementById('long').value = lng;
             document.getElementById('photoUrl').value = photo;
 
+            // ... จัดการรูปภาพและแผนที่ (โค้ดเดิม) ...
             const issuePhoto = document.getElementById('issuePhoto');
             try{ issuePhoto.referrerPolicy = 'no-referrer'; }catch(e){}
             const noIssuePhoto = document.getElementById('noIssuePhoto');
@@ -139,7 +146,6 @@
                     noIssuePhoto.classList.add('hidden');
                     if(issuePhotoError) issuePhotoError.classList.add('hidden');
                 };
-
                 issuePhoto.onerror = function(){
                     if(!issuePhoto.dataset.triedProxy){
                         issuePhoto.dataset.triedProxy = '1';
@@ -154,7 +160,6 @@
                         if(issuePhotoOpen) issuePhotoOpen.href = photo;
                     }
                 };
-
                 issuePhoto.dataset.triedProxy = '';
                 issuePhoto.src = photo;
             }
@@ -172,6 +177,42 @@
                 mapLink.classList.add('opacity-50','pointer-events-none');
                 noLocation.classList.remove('hidden');
             }
+
+            // 🌟 🌟 🌟 โค้ดใหม่: เช็คสถานะงานทันทีที่เปิดเว็บ 🌟 🌟 🌟
+            if (currentCaseId) {
+                document.getElementById('loadingText').innerText = 'กำลังตรวจสอบสถานะงาน...';
+                document.getElementById('loading').classList.remove('hidden');
+                
+                try {
+                    // ส่งเลข Case ID ไปถาม Google Script
+                    const res = await fetch(`${CHECK_WEBHOOK_URL}?id=${currentCaseId}`);
+                    const data = await res.json();
+                    
+                    const btnAccept = document.getElementById('btnAccept');
+                    const btnFinish = document.getElementById('btnFinish');
+
+                    // ถ้า Airtable บอกว่า "ปิดงาน" แล้ว (สะกดให้ตรงกับใน Airtable)
+                    if (data.status === 'ปิดงาน') {
+                        btnFinish.disabled = true;
+                        btnFinish.className = "w-full bg-gray-400 text-white font-bold py-3 rounded-lg shadow cursor-not-allowed flex justify-center items-center gap-2";
+                        btnFinish.innerText = "✅ งานนี้ถูกปิดไปแล้ว";
+                        
+                        btnAccept.disabled = true;
+                        btnAccept.className = "w-full bg-gray-400 text-white font-bold py-3 rounded-lg shadow cursor-not-allowed flex justify-center items-center gap-2";
+                        btnAccept.innerText = "🔒 เคสนี้เสร็จสิ้นแล้ว";
+                    } 
+                    // ถ้าไม่ใช่ "ปิดงาน", "รอรับเรื่อง", "ไม่มีสถานะ" (แสดงว่ามีคนรับงานไปแล้ว)
+                    else if (data.status && data.status !== 'รอรับเรื่อง' && data.status !== 'ไม่มีสถานะ' && data.status !== 'ไม่พบข้อมูล') {
+                        btnAccept.disabled = true;
+                        btnAccept.className = "w-full bg-gray-400 text-white font-bold py-3 rounded-lg shadow cursor-not-allowed flex justify-center items-center gap-2";
+                        btnAccept.innerText = "🚧 มีช่างกำลังดำเนินการ";
+                    }
+                } catch (e) {
+                    console.error('Error fetching status', e);
+                } finally {
+                    document.getElementById('loading').classList.add('hidden');
+                }
+            }
         };
 
         async function submitForm(type) {
@@ -182,7 +223,10 @@
                 if(img.files.length === 0) { Swal.fire('ลืมรูป', 'ต้องถ่ายรูปงานเสร็จก่อนครับ', 'warning'); return; }
             }
 
+            // เปลี่ยนข้อความตอนโหลดเป็นกำลังส่งข้อมูล
+            document.getElementById('loadingText').innerText = 'กำลังส่งข้อมูล...';
             document.getElementById('loading').classList.remove('hidden');
+            
             const formData = new FormData(document.getElementById('techForm'));
 
             try {
@@ -195,9 +239,9 @@
                     formData.delete('image');
                 }
 
-                await fetch(WEBHOOK_URL, { method: 'POST', body: formData });
+                // สั่งส่งข้อมูลเข้า Make (SUBMIT_WEBHOOK_URL)
+                await fetch(SUBMIT_WEBHOOK_URL, { method: 'POST', body: formData });
                 
-                // ✅ ส่วนที่เพิ่มใหม่: ล็อกปุ่มให้เป็นสีเทาทันทีที่ส่งผ่าน
                 const btnAccept = document.getElementById('btnAccept');
                 const btnFinish = document.getElementById('btnFinish');
 
