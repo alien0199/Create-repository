@@ -175,7 +175,7 @@
       }
     }
 
-    // 🚀 ส่งข้อมูล (แก้ไขระบบเรียงลำดับการโหลดภาพใหม่ ป้องกันข้อมูลส่งไปแบบว่างเปล่า)
+    // 🚀 ส่งข้อมูล
     document.getElementById('repairForm').addEventListener('submit', async function (e) {
       e.preventDefault();
       
@@ -185,56 +185,33 @@
       const phone = document.getElementById('phone').value;
       if(phone.length < 9) { Swal.fire('เบอร์โทรไม่ครบ', 'กรุณากรอกเบอร์โทรศัพท์ให้ถูกต้อง (9-10 หลัก)', 'warning'); return; }
 
-      // ✅ 1. เพิ่มการเช็กรูปภาพตรงนี้
-      const imageInput = document.getElementById('imageInput');
-      if(imageInput.files.length === 0){ Swal.fire('ลืมรูป', 'กรุณาถ่ายรูปหน้างานด้วยครับ 📸', 'warning'); return; }
-
       document.getElementById('loading').classList.remove('hidden');
       document.getElementById('submitBtn').disabled = true;
 
       try {
-        const formData = new FormData(this);
+        const imageFile = document.getElementById('imageInput').files[0];
+        const reader = new FileReader();
+        reader.readAsDataURL(imageFile);
+        reader.onloadend = async () => {
+          const base64 = String(reader.result).split(',')[1];
+          const fd = new FormData();
+          fd.append('image', base64);
+          
+          const imgRes = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: fd });
+          const imgData = await imgRes.json();
+          const photoUrl = imgData.data.url;
 
-        // ✅ 2. แยกการประมวลผลไฟล์รูปให้เสร็จก่อนแบบชัวร์ๆ
-        const file = imageInput.files[0];
-        const base64 = await new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(String(reader.result).split(',')[1]);
-            reader.onerror = error => reject(error);
-            reader.readAsDataURL(file);
-        });
+          const formData = new FormData(document.getElementById('repairForm'));
+          formData.set('photoUrl', photoUrl);
+          formData.delete('image');
 
-        // ✅ 3. อัปโหลดเข้า ImgBB
-        const fdImg = new FormData();
-        fdImg.append('image', base64);
-        const imgRes = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { 
-            method: 'POST', 
-            body: fdImg 
-        });
-        const imgData = await imgRes.json();
-        
-        if (!imgData || !imgData.success) throw new Error('ImgBB Upload Failed');
-        const photoUrl = imgData.data.url;
-
-        // ✅ 4. นำ URL สลับที่กับไฟล์ภาพ และยิงเข้า Make
-        formData.set('photoUrl', photoUrl);
-        formData.delete('image');
-
-        const res = await fetch(WEBHOOK_URL, { 
-            method: 'POST', 
-            body: formData 
-        });
-        
-        if (res.ok) {
-          Swal.fire('สำเร็จ', 'ส่งเรื่องเรียบร้อย', 'success').then(() => liff.closeWindow());
-        } else { 
-          throw new Error('Webhook Error'); 
+          const res = await fetch(WEBHOOK_URL, { method: 'POST', body: formData });
+          if (res.ok) {
+            Swal.fire('สำเร็จ', 'ส่งเรื่องเรียบร้อย', 'success').then(() => liff.closeWindow());
+          } else { throw new Error('Webhook Error'); }
         }
-
       } catch (error) {
-        console.error(error);
-        Swal.fire('เกิดข้อผิดพลาด', 'ส่งข้อมูลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error');
-      } finally {
+        Swal.fire('เกิดข้อผิดพลาด', 'ส่งข้อมูลไม่สำเร็จ', 'error');
         document.getElementById('loading').classList.add('hidden');
         document.getElementById('submitBtn').disabled = false;
       }
